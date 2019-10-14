@@ -1,6 +1,6 @@
 package cn.edu.buaa.act.auth.center.controller;
 
-import cn.edu.buaa.act.auth.center.configuration.KeyConfiguration;
+import cn.edu.buaa.act.auth.center.config.KeyConfiguration;
 import cn.edu.buaa.act.auth.center.service.ClientService;
 import cn.edu.buaa.act.common.msg.ObjectRestResponse;
 import org.springframework.beans.factory.annotation.Autowired;

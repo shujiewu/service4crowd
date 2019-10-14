@@ -1,4 +1,4 @@
-package cn.edu.buaa.act.auth.center.configuration;
+package cn.edu.buaa.act.auth.center.config;
 
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;

@@ -69,6 +69,10 @@ public class AccessFilter extends ZuulFilter {
         log.info("send {} request to {}",method,request.getRequestURL().toString());
         final String requestUri = request.getRequestURI().substring(zuulPrefix.length());
         BaseContextHandler.setToken(null);
+//        if (method.equals("OPTIONS")){
+//            System.out.println("11111");
+//            setOptions(JSON.toJSONString(new TokenErrorResponse("true")),200);
+//        }
         // 不进行拦截的地址
         if (isStartWith(requestUri)) {
             return null;
@@ -80,6 +84,7 @@ public class AccessFilter extends ZuulFilter {
             setFailedRequest(JSON.toJSONString(new TokenErrorResponse(e.getMessage())), 200);
             return null;
         }
+        System.out.println(BaseContextHandler.getToken());
         if(user!=null){
             ctx.addZuulRequestHeader(userAuthConfig.getTokenHeader(), BaseContextHandler.getToken());
             ctx.addZuulRequestHeader("userId", user.getId());
@@ -94,6 +99,7 @@ public class AccessFilter extends ZuulFilter {
         if (StringUtils.isBlank(authToken)) {
             authToken = request.getParameter("token");
         }
+        System.out.println("1111"+authToken);
         BaseContextHandler.setToken(authToken);
         return userAuthUtil.getInfoFromToken(authToken);
     }
@@ -112,6 +118,19 @@ public class AccessFilter extends ZuulFilter {
         log.debug("Reporting error ({}): {}", code, body);
         RequestContext ctx = RequestContext.getCurrentContext();
         ctx.setResponseStatusCode(code);
+        if (ctx.getResponseBody() == null) {
+            ctx.setResponseBody(body);
+            ctx.setSendZuulResponse(false);  //不进行路由
+        }
+    }
+
+    private void setOptions(String body, int code) {
+        log.debug("Reporting error ({}): {}", code, body);
+        RequestContext ctx = RequestContext.getCurrentContext();
+        ctx.setResponseStatusCode(code);
+        ctx.getResponse().setHeader("Access-Control-Allow-Origin", "*");
+        ctx.getResponse().setHeader("Access-Control-Allow-Headers", "access-control-allow-origin, X-Requested-With, Content-Type, Accept, x-token");
+
         if (ctx.getResponseBody() == null) {
             ctx.setResponseBody(body);
             ctx.setSendZuulResponse(false);  //不进行路由

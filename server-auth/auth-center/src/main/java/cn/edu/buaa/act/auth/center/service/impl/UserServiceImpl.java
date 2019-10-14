@@ -34,4 +34,13 @@ public class UserServiceImpl implements UserService {
         }
         return info;
     }
+
+    @Override
+    public boolean register(User newUser) {
+        if(userBiz.getUserByUsername(newUser.getUsername())!=null){
+            return false;
+        }
+        userBiz.insertSelective(newUser);
+        return true;
+    }
 }

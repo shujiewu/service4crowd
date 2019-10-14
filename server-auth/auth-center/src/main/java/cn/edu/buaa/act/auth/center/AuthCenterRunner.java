@@ -1,7 +1,7 @@
 package cn.edu.buaa.act.auth.center;
 
 
-import cn.edu.buaa.act.auth.center.configuration.KeyConfiguration;
+import cn.edu.buaa.act.auth.center.config.KeyConfiguration;
 import cn.edu.buaa.act.auth.common.util.RsaKeyHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;

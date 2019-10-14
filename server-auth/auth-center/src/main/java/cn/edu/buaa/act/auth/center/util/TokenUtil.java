@@ -1,6 +1,6 @@
 package cn.edu.buaa.act.auth.center.util;
 
-import cn.edu.buaa.act.auth.center.configuration.KeyConfiguration;
+import cn.edu.buaa.act.auth.center.config.KeyConfiguration;
 import cn.edu.buaa.act.auth.common.util.IJWTInfo;
 import cn.edu.buaa.act.auth.common.util.JWTHelper;
 import org.springframework.beans.factory.annotation.Autowired;

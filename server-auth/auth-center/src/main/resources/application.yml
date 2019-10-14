@@ -4,7 +4,7 @@ EUREKA_HOST: 10.1.1.63
 MYSQL_HOST: 10.1.1.63
 REDIS_HOST: 10.1.1.63
 server:
-    port: 8762
+    port: 8763
 spring:
     application:
         name: auth-center

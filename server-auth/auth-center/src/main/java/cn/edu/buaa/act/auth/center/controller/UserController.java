@@ -1,6 +1,7 @@
 package cn.edu.buaa.act.auth.center.controller;
 
 import cn.edu.buaa.act.auth.center.exception.UserInvalidException;
+import cn.edu.buaa.act.auth.center.model.User;
 import cn.edu.buaa.act.auth.center.service.UserService;
 import cn.edu.buaa.act.auth.center.util.JwtAuthenticationResponse;
 import cn.edu.buaa.act.auth.center.util.TokenUtil;
@@ -27,7 +28,7 @@ import java.util.Map;
  * @author wsj
  * @date 2018/9/8
  */
-
+@CrossOrigin
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -48,15 +49,21 @@ public class UserController {
         throw new UserInvalidException("用户不存在或账户密码错误!");
     }
 
-    @RequestMapping(value = "/register", method = RequestMethod.GET)
-    public ObjectRestResponse<String> register(HttpServletRequest request) throws Exception{
-//        UserInfo info = userService.validate(body.get("username"),body.get("password"));
-//        if (!StringUtils.isEmpty(info.getId())) {
-//            return new ObjectRestResponse<>().data(tokenUtill.generateToken(new JWTInfo(info.getUsername(), info.getId() + "", info.getName())));
-//        }
-//        throw new UserInvalidException("用户不存在或账户密码错误!");\
-//        System.out.println(request.getHeader(tokenHeader));
+    @RequestMapping(value = "/register", method = RequestMethod.POST)
+    public ObjectRestResponse<String> register(@RequestBody Map<String,String> body) throws Exception{
+        User user = new User();
+        user.setUsername(body.get("username"));
+        user.setPassword(body.get("password"));
+        user.setType(body.get("type"));
+        if(!userService.register(user)){
+            throw new UserInvalidException("用户名已存在");
+        }
         return new ObjectRestResponse<String>();
+    }
+
+    @RequestMapping(value = "/logout", method = RequestMethod.GET)
+    public ResponseEntity<String> logout() throws Exception {
+        return ResponseEntity.ok("success");
     }
 
     @RequestMapping(value = "/refresh", method = RequestMethod.GET)
