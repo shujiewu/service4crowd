@@ -1,0 +1,23 @@
+EUREKA_HOST: 10.1.1.62
+EUREKA_PORT: 8761
+server:
+  port: 8750
+
+eureka:
+  instance:
+    statusPageUrlPath: /info
+    healthCheckUrlPath: /health
+  client:
+    serviceUrl:
+      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+
+spring:
+  application:
+    name: server-config
+  cloud:
+    config:
+      server:
+          git:
+            uri: https://github.com/shujiewu/service4crowd-config
+#            username: shujiewu
+#            password: xxxxxx

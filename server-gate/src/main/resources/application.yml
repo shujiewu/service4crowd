@@ -1,0 +1,97 @@
+RABBIT_MQ_HOST: 10.1.1.63
+RABBIT_MQ_PORT: 5673
+EUREKA_HOST: 10.1.1.63
+server:
+  port: 8765
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+
+spring:
+  application:
+    name: server-gate
+  rabbitmq:
+    host: ${RABBIT_MQ_HOST:localhost}
+    port:  ${RABBIT_MQ_PORT:5672}
+    username: guest
+    password: guest
+  servlet:
+    multipart:
+      max-file-size: 2048MB
+      max-request-size: 2048MB
+#  zipkin:
+#    #内存方式配置，不需要
+#    #base-url: http://localhost:9411
+#    #日志发送队列类型
+#    sender:
+#      type: rabbit
+#    #发送的队列名称，默认zipkin，正常情况不要修改因为zipkin-server默认监控队列也是zipkin
+#    rabbitmq:
+#      queue: zipkin
+  sleuth:
+  #统计收集百分比默认0.1，正式环境可不配置
+    sampler:
+      percentage: 1.0
+auth:
+  user:
+    token-header: Authorization
+  client:
+    token-header: client-token
+    id: server-gate  #不填则默认读取spring.application.name
+    secret: YXplMllF
+
+gate:
+  ignore:
+    startWith: /static,/auth/user/login
+zuul:
+  ignored-services: "*" #不要自动创建服务路由
+  sensitive-headers: #不过滤敏感信息Cookie，Set-Cookie，Authorization
+  prefix: /api #为zuul设置一个公共的前缀
+  routes:
+    auth: #一条规则
+      path: /auth/**  #满足条件映射到下面的服务
+      serviceId: auth-center
+    serivce: #一条规则
+      path: /service/**  #满足条件映射到下面的服务
+      serviceId: service-manage
+      strip-prefix: false
+    mlflow:
+      path: /mlflow/**  #满足条件映射到下面的服务
+      serviceId: service-mlflow
+    workflow:
+      path: /workflow/**
+      serviceId: service-workflow
+      strip-prefix: false
+    data:
+      path: /data/**
+      serviceId: service-data-core
+      strip-prefix: false
+    activitimodel:
+      path: /modeler/**
+      serviceId: service-workflow
+
+ribbon:
+  eureka:
+    enabled: true
+  ReadTimeout: 120000  #设置路由转发请求的超时时间，是对请求连接建立之后的处理时间
+  ConnectTimeout: 120000 #路由转发请求时候，创建请求连接的超时时间，如果小于timeoutInMilliseconds会自动进行重试路由请求
+  MaxAutoRetries: 0
+  MaxAutoRetriesNextServer: 1
+  OkToRetryOnAllOperations: false
+
+
+hystrix:
+  threadpool:
+    default:
+      coreSize: 1000 #并发执行的最大线程数，默认10
+      maxQueueSize: 1000 #BlockingQueue的最大队列数
+      queueSizeRejectionThreshold: 500 #即使maxQueueSize没有达到，达到queueSizeRejectionThreshold该值后，请求也会被拒绝
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 50000000  #API网关中路由转发请求的HystrixCommand执行超时时间，为毫秒。超过Hystrix会将该执行命令标记为Timeout并标记为异常
+          strategy: SEMAPHORE

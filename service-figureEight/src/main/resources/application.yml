@@ -1,0 +1,33 @@
+EUREKA_HOST: 10.1.1.62
+RABBITMQ_HOST: localhost
+spring:
+  data:
+    mongodb:
+      uri: mongodb://crowd:1706223@localhost:27017/CrowdData
+  application:
+    name: service-figureEight
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    username: ldkobe
+    password: 1706223
+    port: 5672
+    virtual-host: /
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+
+server:
+  port: 8802
+
+
+auth:
+  serviceId: server-auth
+  user:
+    token-header: Authorization
+  client:
+    token-header: client-token
+    id: service-figureEight
+    secret: auKFgWh3
+
+
