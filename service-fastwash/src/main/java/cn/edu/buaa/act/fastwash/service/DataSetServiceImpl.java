@@ -28,4 +28,9 @@ public class DataSetServiceImpl implements IDataSetService {
     public List<DataSetEntity> findDataSets() {
         return dataSetConfigRepository.findAll();
     }
+
+    @Override
+    public DataSetEntity findDataSet(String dataSetName) {
+        return dataSetConfigRepository.findDataSetEntityByDataSetName(dataSetName);
+    }
 }

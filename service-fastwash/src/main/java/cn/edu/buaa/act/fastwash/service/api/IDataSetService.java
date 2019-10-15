@@ -10,4 +10,5 @@ public interface IDataSetService {
     DataSetEntity insertDataSet(DataSetEntity dataSetEntity);
     boolean dataSetExist(String dataSetName);
     List<DataSetEntity> findDataSets();
+    DataSetEntity findDataSet(String dataSetName);
 }
