@@ -32,7 +32,7 @@ public class ProjectServiceImpl implements IProjectService{
     public ProjectEntity insertProject(ProjectEntity projectEntity) {
 
         projectEntity.setUserId(BaseContextHandler.getUserID());
-        if(projectExist(projectEntity)){
+        if(projectExist(projectEntity.getName())){
             throw new ProjectInvalidException("项目名已存在");
         }
         MongoCollection<Document> mongoCollection =  mongoTemplate.createCollection(projectEntity.getName()+"_data_"+projectEntity.getUserId());
@@ -64,8 +64,8 @@ public class ProjectServiceImpl implements IProjectService{
     }
 
     @Override
-    public boolean projectExist(ProjectEntity projectEntity) {
-        return projectRepository.findProjectEntityByNameAndUserId(projectEntity.getName(), projectEntity.getUserId()) != null;
+    public boolean projectExist(String projectName) {
+        return projectRepository.findProjectEntityByNameAndUserId(projectName, BaseContextHandler.getUserID()) != null;
     }
 
     @Override

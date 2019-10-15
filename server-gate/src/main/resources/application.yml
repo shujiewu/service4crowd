@@ -5,9 +5,20 @@ server:
   port: 8766
 
 eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+    instance:
+        statusPageUrlPath: /info
+        healthCheckUrlPath: /health
+        # docker 部署开启
+        prefer-ip-address: true
+        # ip-address: 10.1.1.63
+        instance-id: ${spring.cloud.client.ip-address}:${server.port}
+    client:
+        serviceUrl:
+            defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+#eureka:
+#  client:
+#    serviceUrl:
+#      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
 
 spring:
   application:
@@ -71,7 +82,9 @@ zuul:
     activitimodel:
       path: /modeler/**
       serviceId: service-workflow
-
+    fastwash:
+      path: /fastwash/**
+      serviceId: service-fastwash
 ribbon:
   eureka:
     enabled: true

@@ -13,10 +13,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.net.URLEncoder;
 import java.util.Date;
 import java.util.List;
@@ -68,11 +70,25 @@ public class AccessFilter extends ZuulFilter {
         final String method = request.getMethod();
         log.info("send {} request to {}",method,request.getRequestURL().toString());
         final String requestUri = request.getRequestURI().substring(zuulPrefix.length());
+
+        HttpServletResponse response = ctx.getResponse();
+        // 这些是对请求头的匹配，网上有很多解释
+        response.setHeader("Access-Control-Allow-Origin",request.getHeader("Origin"));
+        response.setHeader("Access-Control-Allow-Credentials","true");
+        response.setHeader("Access-Control-Allow-Methods","GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH");
+        response.setHeader("Access-Control-Allow-Headers","authorization, content-type");
+        response.setHeader("Access-Control-Expose-Headers","X-forwared-port, X-forwarded-host");
+        response.setHeader("Vary","Origin,Access-Control-Request-Method,Access-Control-Request-Headers");
+
+        // 跨域请求一共会进行两次请求 先发送options 是否可以请求
+        // 调试可发现一共拦截两次 第一次请求为options，第二次为正常的请求 eg：get请求
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())){
+            ctx.setSendZuulResponse(false); //验证请求不进行路由
+            ctx.setResponseStatusCode(HttpStatus.OK.value());//返回验证成功的状态码
+            ctx.set("isSuccess", true);
+            return null;
+        }
         BaseContextHandler.setToken(null);
-//        if (method.equals("OPTIONS")){
-//            System.out.println("11111");
-//            setOptions(JSON.toJSONString(new TokenErrorResponse("true")),200);
-//        }
         // 不进行拦截的地址
         if (isStartWith(requestUri)) {
             return null;
@@ -124,16 +140,16 @@ public class AccessFilter extends ZuulFilter {
         }
     }
 
-    private void setOptions(String body, int code) {
-        log.debug("Reporting error ({}): {}", code, body);
-        RequestContext ctx = RequestContext.getCurrentContext();
-        ctx.setResponseStatusCode(code);
-        ctx.getResponse().setHeader("Access-Control-Allow-Origin", "*");
-        ctx.getResponse().setHeader("Access-Control-Allow-Headers", "access-control-allow-origin, X-Requested-With, Content-Type, Accept, x-token");
-
-        if (ctx.getResponseBody() == null) {
-            ctx.setResponseBody(body);
-            ctx.setSendZuulResponse(false);  //不进行路由
-        }
-    }
+//    private void setOptions(String body, int code) {
+//        log.debug("Reporting error ({}): {}", code, body);
+//        RequestContext ctx = RequestContext.getCurrentContext();
+//        ctx.setResponseStatusCode(code);
+//        ctx.getResponse().setHeader("Access-Control-Allow-Origin", "*");
+//        ctx.getResponse().setHeader("Access-Control-Allow-Headers", "access-control-allow-origin, X-Requested-With, Content-Type, Accept, x-token");
+//
+//        if (ctx.getResponseBody() == null) {
+//            ctx.setResponseBody(body);
+//            ctx.setSendZuulResponse(false);  //不进行路由
+//        }
+//    }
 }

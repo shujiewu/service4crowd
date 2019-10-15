@@ -108,7 +108,8 @@ eureka:
         healthCheckUrlPath: /health
         # docker 部署开启
         prefer-ip-address: true
-        ip-address: 127.0.0.1
+        # ip-address: 10.1.1.63
+        instance-id: ${spring.cloud.client.ip-address}:${server.port}
     client:
         serviceUrl:
             defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/

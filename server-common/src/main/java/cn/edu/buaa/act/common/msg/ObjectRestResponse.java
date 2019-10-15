@@ -9,14 +9,14 @@ import java.time.LocalDateTime;
 public class ObjectRestResponse<T> extends BaseResponse {
 
     T data;
-    boolean rel;
+    boolean success;
 
-    public boolean isRel() {
-        return rel;
+    public boolean isSuccess() {
+        return success;
     }
 
-    public void setRel(boolean rel) {
-        this.rel = rel;
+    public void setSuccess(boolean rel) {
+        this.success = rel;
     }
 
     public ObjectRestResponse(){
@@ -28,8 +28,8 @@ public class ObjectRestResponse<T> extends BaseResponse {
         return this;
     }
 
-    public ObjectRestResponse rel(boolean rel) {
-        this.setRel(rel);
+    public ObjectRestResponse success(boolean rel) {
+        this.setSuccess(rel);
         return this;
     }
 
@@ -51,7 +51,7 @@ public class ObjectRestResponse<T> extends BaseResponse {
     public String toString() {
         return "ObjectRestResponse{" +
                 "data=" + data +
-                ", rel=" + rel +
+                ", rel=" + success +
                 '}';
     }
 }

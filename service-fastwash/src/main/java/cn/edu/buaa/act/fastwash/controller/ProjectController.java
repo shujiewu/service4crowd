@@ -28,4 +28,9 @@ public class ProjectController {
     public ResponseEntity<Object> createProject(@RequestBody ProjectEntity projectEntity) throws Exception {
         return new ResponseEntity<Object>(projectService.insertProject(projectEntity),HttpStatus.OK);
     }
+
+    @RequestMapping(value = "/{projectName}/exist", method = RequestMethod.GET, produces = "application/json")
+    public ResponseEntity<Object> projectExist(@PathVariable String projectName) throws Exception {
+        return new ResponseEntity<Object>(projectService.projectExist(projectName),HttpStatus.OK);
+    }
 }

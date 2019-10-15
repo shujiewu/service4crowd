@@ -11,6 +11,9 @@ public interface IProjectService {
     ProjectEntity insertProject(ProjectEntity projectEntity);
     ProjectEntity publishProject(ProjectEntity projectEntity);
     void deleteProject(ProjectEntity projectEntity,boolean deleteData);
-    boolean projectExist(ProjectEntity projectEntity);
+    boolean projectExist(String projectName);
     Page<ProjectEntity> findProjects(Pageable pageable);
+
+
+
 }

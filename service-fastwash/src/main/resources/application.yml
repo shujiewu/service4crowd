@@ -12,6 +12,9 @@ eureka:
 spring:
   application:
     name: service-fastwash
+  data:
+    mongodb:
+      uri: mongodb://crowd_fastwash:1706223@10.1.1.63:27017/fastwash
   rabbitmq:
     host: ${RABBIT_MQ_HOST:localhost}
     port:  ${RABBIT_MQ_PORT:5672}
@@ -27,8 +30,8 @@ auth:
     token-header: Authorization
   client:
     token-header: client-token
-    id: server-gate  #不填则默认读取spring.application.name
-    secret: 12Ae9igF
+    id: service-fastwash  #不填则默认读取spring.application.name
+    secret: ShOriSwn
 
 ribbon:
   eureka:

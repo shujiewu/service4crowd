@@ -28,7 +28,6 @@ import java.util.Map;
  * @author wsj
  * @date 2018/9/8
  */
-@CrossOrigin
 @RestController
 @RequestMapping("/user")
 public class UserController {
