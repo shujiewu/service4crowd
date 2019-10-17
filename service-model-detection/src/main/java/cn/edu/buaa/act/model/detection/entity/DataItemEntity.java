@@ -1,11 +1,9 @@
-package cn.edu.buaa.act.fastwash.entity;
+package cn.edu.buaa.act.model.detection.entity;
 
 
 import lombok.Getter;
 import lombok.Setter;
-import org.bson.types.ObjectId;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +18,6 @@ public class DataItemEntity {
     private int height;
     private boolean hasGroundTruth;
     private String status;
-    private String lastUpdateTime;
     //class->iteration->list
     private Map<String,Map<String,List<Annotation>>> annotations;
 }

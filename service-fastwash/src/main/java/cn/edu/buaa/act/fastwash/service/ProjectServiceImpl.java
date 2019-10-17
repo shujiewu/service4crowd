@@ -2,21 +2,18 @@ package cn.edu.buaa.act.fastwash.service;
 
 import cn.edu.buaa.act.common.context.BaseContextHandler;
 import cn.edu.buaa.act.fastwash.common.MongoUtil;
-import cn.edu.buaa.act.fastwash.constant.Constants;
-import cn.edu.buaa.act.fastwash.entity.DataItemEntity;
-import cn.edu.buaa.act.fastwash.entity.DataSetEntity;
-import cn.edu.buaa.act.fastwash.entity.ProjectEntity;
+import cn.edu.buaa.act.fastwash.common.Constants;
+import cn.edu.buaa.act.fastwash.entity.*;
 import cn.edu.buaa.act.fastwash.exception.ProjectInvalidException;
 import cn.edu.buaa.act.fastwash.repository.ProjectRepository;
 import cn.edu.buaa.act.fastwash.service.api.IDataSetService;
 import cn.edu.buaa.act.fastwash.service.api.IProjectService;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.mongodb.BasicDBObject;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -27,8 +24,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-import static cn.edu.buaa.act.fastwash.constant.Constants.IMAGE_STATUS_UNANNOTATED;
-import static cn.edu.buaa.act.fastwash.constant.Constants.PROJECT_STATUS_CREATE;
+import static cn.edu.buaa.act.fastwash.common.Constants.IMAGE_STATUS_UNANNOTATED;
+import static cn.edu.buaa.act.fastwash.common.Constants.PROJECT_STATUS_CREATE;
 
 @Service
 public class ProjectServiceImpl implements IProjectService{
@@ -44,13 +41,16 @@ public class ProjectServiceImpl implements IProjectService{
 
     @Override
     public ProjectEntity insertProject(ProjectEntity projectEntity) {
-
         projectEntity.setUserId(BaseContextHandler.getUserID());
-        if(projectExist(projectEntity.getName())){
+        if(projectRepository.findProjectEntityByName(projectEntity.getName()+"_"+BaseContextHandler.getUserID())!=null){
             throw new ProjectInvalidException("项目名已存在");
         }
-        MongoCollection<Document> mongoCollection =  mongoTemplate.createCollection(projectEntity.getName()+"_data_"+projectEntity.getUserId());
-
+        //重新设置项目名
+        projectEntity.setName(projectEntity.getName()+"_"+BaseContextHandler.getUserID());
+        //存放dataItem
+        mongoTemplate.createCollection(projectEntity.getName()+"_data");
+        //存放groundTruth和汇聚结果
+        mongoTemplate.createCollection(projectEntity.getName()+"_result");
         projectEntity.setCreateTime(new Date());
         projectEntity.setStatus(PROJECT_STATUS_CREATE);
         projectEntity = projectRepository.insert(projectEntity);
@@ -62,24 +62,13 @@ public class ProjectServiceImpl implements IProjectService{
     }
 
     @Override
-    public ProjectEntity publishProject(ProjectEntity projectEntity) {
-        projectEntity.setUserId(BaseContextHandler.getUserID());
-        projectEntity.setStatus(Constants.PROJECT_STATUS_PUBLISH);
-        return null;
-    }
-
-    @Override
-    public void deleteProject(ProjectEntity projectEntity,boolean deleteData) {
-        projectEntity.setUserId(BaseContextHandler.getUserID());
-        if(deleteData){
-            mongoTemplate.dropCollection(projectEntity.getName()+"_data_"+projectEntity.getUserId());
-        }
-        projectRepository.delete(projectEntity);
-    }
-
-    @Override
     public boolean projectExist(String projectName) {
-        return projectRepository.findProjectEntityByNameAndUserId(projectName, BaseContextHandler.getUserID()) != null;
+        return projectRepository.findProjectEntityByName(projectName+"_"+BaseContextHandler.getUserID()) != null;
+    }
+
+    @Override
+    public ProjectEntity findProjectEntityByName(String projectName) {
+        return projectRepository.findProjectEntityByName(projectName);
     }
 
     @Override
@@ -88,13 +77,14 @@ public class ProjectServiceImpl implements IProjectService{
     }
 
     @Override
+    public Page<ProjectEntity> findAllProjects(Pageable pageable) {
+        return projectRepository.findAll(pageable);
+    }
+
+    @Override
     public Page<DataItemEntity> findImages(String projectName, Pageable pageable) {
-        MongoCollection<Document> mongoCollection = mongoTemplate.getCollection(projectName+"_data_"+BaseContextHandler.getUserID());
-        Sort sort =pageable.getSort();
-        //加入查询条件
-        // BasicDBObject query = new BasicDBObject();
-        // query.append("id","-1");
-        MongoCursor<Document> cursor = mongoCollection.find().sort(Sorts.orderBy(Sorts.ascending("id"))).
+        MongoCollection<Document> mongoCollection = mongoTemplate.getCollection(projectName+"_data");
+        MongoCursor<Document> cursor = mongoCollection.find().sort(Sorts.orderBy(Sorts.ascending("_id"))).
                 limit(pageable.getPageSize()).skip((pageable.getPageNumber()-1)*pageable.getPageSize()).iterator();
         List<DataItemEntity> dataItemEntities = new ArrayList<>();
         try {
@@ -121,6 +111,33 @@ public class ProjectServiceImpl implements IProjectService{
             }
             DataSetEntity dataSetEntity = dataSetService.findDataSet(dataSetName);
             List<Document> dataItemEntities = new ArrayList<>();
+            List<Document> groundTruthItems = new ArrayList<>();
+
+            Map<String,List<Tag>> groundTruthMap = new HashMap<>();
+            Map<String,Category> categoryMap = new HashMap<>();
+            dataSetEntity.getCategories().forEach(category -> {
+                categoryMap.put(category.getId(),category);
+            });
+            dataSetEntity.getAnnotations().forEach(annotation->{
+                String imageId = annotation.getString("image_id");
+                String categoryId = annotation.getString("category_id");
+                JSONArray bbox = annotation.getJSONArray("bbox");
+                Box box = new Box();
+                box.setX(Double.valueOf(bbox.get(0).toString()));
+                box.setY(Double.valueOf(bbox.get(1).toString()));
+                box.setW(Double.valueOf(bbox.get(2).toString()));
+                box.setH(Double.valueOf(bbox.get(3).toString()));
+                Classification classification = new Classification();
+                classification.setId(categoryId);
+                classification.setValue(categoryMap.get(categoryId).getName());
+                Tag tag = new Tag();
+                tag.setBox(box);
+                tag.setClassification(classification);
+                groundTruthMap.computeIfAbsent(imageId, k -> new ArrayList<>());
+                groundTruthMap.get(imageId).add(tag);
+            });
+
+
             if(projectEntity.getImageId()!=null){
                 Set<String> dataItemList = new HashSet<>(projectEntity.getImageId());
                 dataSetEntity.getImages().forEach(image -> {
@@ -134,6 +151,14 @@ public class ProjectServiceImpl implements IProjectService{
                         dataItemEntity.setHeight(image.getHeight());
                         dataItemEntity.setWidth(image.getWidth());
                         dataItemEntities.add(MongoUtil.toDocument(dataItemEntity));
+
+                        TrainingItem trainingItem = new TrainingItem();
+                        trainingItem.setDataSetName(dataSetName);
+                        trainingItem.setImageId(image.getId());
+                        //trainingItem.setLastUpdatedTime(new Date());
+                        trainingItem.setType("GroundTruth");
+                        trainingItem.setTagList(groundTruthMap.get(image.getId()));
+                        groundTruthItems.add(MongoUtil.toDocument(trainingItem));
                     }
                 });
             }else{
@@ -147,10 +172,21 @@ public class ProjectServiceImpl implements IProjectService{
                     dataItemEntity.setHeight(image.getHeight());
                     dataItemEntity.setWidth(image.getWidth());
                     dataItemEntities.add(MongoUtil.toDocument(dataItemEntity));
+
+                    TrainingItem trainingItem = new TrainingItem();
+                    trainingItem.setDataSetName(dataSetName);
+                    trainingItem.setImageId(image.getId());
+                    //trainingItem.setLastUpdatedTime(new Date());
+                    trainingItem.setType("GroundTruth");
+                    trainingItem.setTagList(groundTruthMap.get(image.getId()));
+                    groundTruthItems.add(MongoUtil.toDocument(trainingItem));
                 });
             }
-            MongoCollection<Document> mongoCollection = mongoTemplate.getCollection(projectEntity.getName()+"_data_"+projectEntity.getUserId());
-            mongoCollection.insertMany(dataItemEntities);
+            MongoCollection<Document> dataCollection = mongoTemplate.getCollection(projectEntity.getName()+"_data");
+            dataCollection.insertMany(dataItemEntities);
+
+            MongoCollection<Document> groundTruthCollection = mongoTemplate.getCollection(projectEntity.getName()+"_result");
+            groundTruthCollection.insertMany(groundTruthItems);
             projectEntity.setStatus(Constants.PROJECT_STATUS_PUBLISH);
             projectRepository.save(projectEntity);
             return true;
@@ -158,6 +194,22 @@ public class ProjectServiceImpl implements IProjectService{
         else{
             return false;
         }
+    }
+
+    @Override
+    public ProjectEntity publishProject(ProjectEntity projectEntity) {
+        projectEntity.setUserId(BaseContextHandler.getUserID());
+        projectEntity.setStatus(Constants.PROJECT_STATUS_PUBLISH);
+        return null;
+    }
+
+    @Override
+    public void deleteProject(ProjectEntity projectEntity,boolean deleteData) {
+        projectEntity.setUserId(BaseContextHandler.getUserID());
+        if(deleteData){
+            mongoTemplate.dropCollection(projectEntity.getName()+"_data");
+        }
+        projectRepository.delete(projectEntity);
     }
 }
 

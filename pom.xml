@@ -25,6 +25,7 @@
         <module>service-data-processor</module>
         <module>data-common</module>
         <module>service-fastwash</module>
+        <module>service-model-detection</module>
     </modules>
 
     <parent>

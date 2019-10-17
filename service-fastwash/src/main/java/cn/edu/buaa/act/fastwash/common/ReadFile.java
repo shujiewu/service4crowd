@@ -3,13 +3,12 @@ package cn.edu.buaa.act.fastwash.common;
 import cn.edu.buaa.act.fastwash.entity.DataSetEntity;
 import com.alibaba.fastjson.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.*;
 
-public class ReadJsonFile {
-    public static DataSetEntity ReadFile(String path){
+public class ReadFile {
+    public static DataSetEntity readDataSet(String path){
         File file = new File(path);
         BufferedReader reader = null;
         DataSetEntity result = null;
@@ -33,5 +32,19 @@ public class ReadJsonFile {
             }
         }
         return result;
+    }
+
+    public  static byte[] getImageBinary(String path, String imgType) {
+        File f = new File(path);
+        BufferedImage bi;
+        try {
+            bi = ImageIO.read(f);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(bi, imgType, baos);  //经测试转换的图片是格式这里就什么格式，否则会失真
+            return baos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

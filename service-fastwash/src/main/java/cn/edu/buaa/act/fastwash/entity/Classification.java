@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-class Classification{
+public class Classification{
     private String id;
     private String value;
     private String fillColor;

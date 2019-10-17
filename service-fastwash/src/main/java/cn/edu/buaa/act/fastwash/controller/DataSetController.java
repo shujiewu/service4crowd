@@ -2,32 +2,27 @@ package cn.edu.buaa.act.fastwash.controller;
 
 
 import cn.edu.buaa.act.common.msg.ObjectRestResponse;
-import cn.edu.buaa.act.fastwash.common.DataPageable;
-import cn.edu.buaa.act.fastwash.common.ReadJsonFile;
+import cn.edu.buaa.act.fastwash.common.ReadFile;
 import cn.edu.buaa.act.fastwash.entity.DataSetEntity;
 import cn.edu.buaa.act.fastwash.service.api.IDataSetService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/dataset")
+@RequestMapping("/dataSet")
 public class DataSetController {
     @Autowired
     IDataSetService dataSetService;
 
     @RequestMapping(value = "/list", method = RequestMethod.GET, produces = "application/json")
-    public ObjectRestResponse<DataSetEntity> listDataSet() throws Exception {
+    public ObjectRestResponse listDataSet() throws Exception {
 //        if(!dataSetService.dataSetExist("voc_2007_trainval")){
 //            dataSetService.insertDataSet(ReadJsonFile.ReadFile("D:\\data\\VOC2007\\annotations"));
 //        }
         if(!dataSetService.dataSetExist("voc_2007_test")){
-            DataSetEntity dataSetEntity = ReadJsonFile.ReadFile("D:\\data\\VOC2007\\annotations\\voc_2007_test.json");
+            DataSetEntity dataSetEntity = ReadFile.readDataSet("D:\\data\\VOC2007\\annotations\\voc_2007_test.json");
             dataSetEntity.setDataSetName("voc_2007_test");
             dataSetService.insertDataSet(dataSetEntity);
         }

@@ -13,9 +13,10 @@ public interface IProjectService {
 
     void deleteProject(ProjectEntity projectEntity,boolean deleteData);
     boolean projectExist(String projectName);
+    ProjectEntity findProjectEntityByName(String projectName);
     Page<ProjectEntity> findProjects(Pageable pageable);
+    Page<ProjectEntity> findAllProjects(Pageable pageable);
     Page<DataItemEntity> findImages(String projectName, Pageable pageable);
     ProjectEntity publishProject(ProjectEntity projectEntity);
     boolean publishProject(String projectName);
-
 }

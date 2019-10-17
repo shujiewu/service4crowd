@@ -7,7 +7,9 @@ import lombok.Setter;
 @Setter
 public class Image {
     private String id;
+    private String dataSetName;
     private String file_name;
     private int width;
     private int height;
+    private byte[] blob;
 }

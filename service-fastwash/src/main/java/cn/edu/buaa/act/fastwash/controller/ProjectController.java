@@ -5,20 +5,14 @@ import cn.edu.buaa.act.common.msg.TableResultResponse;
 import cn.edu.buaa.act.fastwash.common.DataPageable;
 import cn.edu.buaa.act.fastwash.entity.DataItemEntity;
 import cn.edu.buaa.act.fastwash.entity.ProjectEntity;
-import cn.edu.buaa.act.fastwash.exception.ProjectInvalidException;
 import cn.edu.buaa.act.fastwash.service.api.IProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  * UserController
@@ -34,7 +28,7 @@ public class ProjectController {
     IProjectService projectService;
 
     @RequestMapping(value = "/create", method = RequestMethod.POST, produces = "application/json")
-    public ObjectRestResponse<Object> createProject(@RequestBody ProjectEntity projectEntity) throws Exception {
+    public ObjectRestResponse createProject(@RequestBody ProjectEntity projectEntity) throws Exception {
         projectEntity = projectService.insertProject(projectEntity);
         if(projectEntity.getId()==null){
             return new ObjectRestResponse<Object>().success(false);
@@ -44,7 +38,7 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/{projectName}/exist", method = RequestMethod.GET, produces = "application/json")
-    public ObjectRestResponse<Object> projectExist(@PathVariable String projectName) throws Exception {
+    public ObjectRestResponse projectExist(@PathVariable String projectName) throws Exception {
         return new ObjectRestResponse<Object>().success(!projectService.projectExist(projectName));
     }
 
@@ -57,7 +51,7 @@ public class ProjectController {
         dataPageable.setPagesize(limit);
         dataPageable.setPagenumber(page);
 
-        Page<ProjectEntity> projectEntityPage = projectService.findProjects(dataPageable);
+        Page<ProjectEntity> projectEntityPage = projectService.findAllProjects(dataPageable);
         return new TableResultResponse<ProjectEntity>(projectEntityPage.getTotalElements(),projectEntityPage.getContent());
     }
 
@@ -75,9 +69,12 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/{projectName}/publish", method = RequestMethod.GET, produces = "application/json")
-    public ObjectRestResponse<Object> publishProject(@PathVariable String projectName) throws Exception {
+    public ObjectRestResponse publishProject(@PathVariable String projectName) throws Exception {
         return new ObjectRestResponse<Object>().success(projectService.publishProject(projectName));
     }
 
-
+    @RequestMapping(value = "/{projectName}/config", method = RequestMethod.GET, produces = "application/json")
+    public ObjectRestResponse projectConfig(@PathVariable String projectName) throws Exception {
+        return new ObjectRestResponse<ProjectEntity>().data(projectService.findProjectEntityByName(projectName)).success(true);
+    }
 }
