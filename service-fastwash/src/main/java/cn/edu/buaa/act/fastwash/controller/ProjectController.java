@@ -3,9 +3,9 @@ package cn.edu.buaa.act.fastwash.controller;
 import cn.edu.buaa.act.common.msg.ObjectRestResponse;
 import cn.edu.buaa.act.common.msg.TableResultResponse;
 import cn.edu.buaa.act.fastwash.common.DataPageable;
-import cn.edu.buaa.act.fastwash.entity.DataItemEntity;
 import cn.edu.buaa.act.fastwash.entity.ProjectEntity;
 import cn.edu.buaa.act.fastwash.service.api.IProjectService;
+import cn.edu.buaa.act.fastwash.data.DataItemEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -56,7 +56,7 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/{projectName}/images", method = RequestMethod.GET, produces = "application/json")
-    public TableResultResponse<DataItemEntity> imageList(@PathVariable String projectName,@RequestParam("page") int page, @RequestParam("limit") int limit) throws Exception {
+    public TableResultResponse<DataItemEntity> imageList(@PathVariable String projectName, @RequestParam("page") int page, @RequestParam("limit") int limit) throws Exception {
         DataPageable dataPageable = new DataPageable();
         List<Sort.Order> orders = new ArrayList<Sort.Order>();
         orders.add(new Sort.Order(Sort.Direction.DESC, "id"));

@@ -1,4 +1,4 @@
-package cn.edu.buaa.act.fastwash.entity;
+package cn.edu.buaa.act.fastwash.data;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -10,4 +10,5 @@ public class Box {
     private double y;
     private double w;
     private double h;
+    private double score;
 }

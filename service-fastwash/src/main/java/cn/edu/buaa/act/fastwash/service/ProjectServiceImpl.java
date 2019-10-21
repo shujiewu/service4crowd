@@ -3,6 +3,7 @@ package cn.edu.buaa.act.fastwash.service;
 import cn.edu.buaa.act.common.context.BaseContextHandler;
 import cn.edu.buaa.act.fastwash.common.MongoUtil;
 import cn.edu.buaa.act.fastwash.common.Constants;
+import cn.edu.buaa.act.fastwash.data.*;
 import cn.edu.buaa.act.fastwash.entity.*;
 import cn.edu.buaa.act.fastwash.exception.ProjectInvalidException;
 import cn.edu.buaa.act.fastwash.repository.ProjectRepository;
@@ -18,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
@@ -101,6 +101,7 @@ public class ProjectServiceImpl implements IProjectService{
         return dataItemEntityPage;
     }
 
+    // Todo: 避免重复提交
     @Override
     public boolean publishProject(String projectName) {
         ProjectEntity projectEntity = projectRepository.findProjectEntityByNameAndUserId(projectName,BaseContextHandler.getUserID());
@@ -127,6 +128,7 @@ public class ProjectServiceImpl implements IProjectService{
                 box.setY(Double.valueOf(bbox.get(1).toString()));
                 box.setW(Double.valueOf(bbox.get(2).toString()));
                 box.setH(Double.valueOf(bbox.get(3).toString()));
+                box.setScore(1.0);
                 Classification classification = new Classification();
                 classification.setId(categoryId);
                 classification.setValue(categoryMap.get(categoryId).getName());

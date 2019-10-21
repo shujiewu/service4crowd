@@ -1,4 +1,4 @@
-package cn.edu.buaa.act.model.detection.entity;
+package cn.edu.buaa.act.fastwash.data;
 
 
 import lombok.Getter;
@@ -17,7 +17,15 @@ public class DataItemEntity {
     private int width;
     private int height;
     private boolean hasGroundTruth;
+    private boolean hasMachineInferenceTruth;
+    private boolean hasCrowdInferenceTruth;
     private String status;
+    private String lastUpdateTime;
     //class->iteration->list
     private Map<String,Map<String,List<Annotation>>> annotations;
+
+    private List<String> updateTime;
+
+    //class->userIdList
+    //private Map<String,List<String>> workerList;
 }

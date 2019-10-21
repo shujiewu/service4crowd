@@ -1,4 +1,4 @@
-package cn.edu.buaa.act.fastwash.entity;
+package cn.edu.buaa.act.fastwash.data;
 
 import com.alibaba.fastjson.JSONObject;
 import lombok.Getter;

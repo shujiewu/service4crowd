@@ -1,9 +1,8 @@
-package cn.edu.buaa.act.fastwash.entity;
+package cn.edu.buaa.act.fastwash.data;
 
 import com.alibaba.fastjson.JSONObject;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
 import java.util.List;

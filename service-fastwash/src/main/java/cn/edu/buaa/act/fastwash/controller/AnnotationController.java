@@ -26,6 +26,7 @@ public class AnnotationController {
             CrowdAnnotationTask crowdAnnotationTask = annotationService.findGroundTruthList(projectName,dataSetName,imageId);
             return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(true);
         }
+        //如果没有
         if("improve".equals(action)){
             CrowdAnnotationTask crowdAnnotationTask = annotationService.findLastAnnotationList(projectName,dataSetName,imageId);
             return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(true);
@@ -40,6 +41,7 @@ public class AnnotationController {
         annotationService.submitCrowdAnnotation(projectName,crowdAnnotationTask);
         return new ObjectRestResponse<>().success(true);
     }
+
 //    @RequestMapping(value = "/model/inference", method = RequestMethod.POST, produces = "application/json")
 //    public ResponseEntity<Object> getTruthInferenceAlgorithm(@RequestBody List<DataItemEntity> dataItemEntityList) throws Exception {
 //        return new ResponseEntity<Object>(truthInferenceService.queryTruthInferenceEntityById(algorithmId), HttpStatus.OK);

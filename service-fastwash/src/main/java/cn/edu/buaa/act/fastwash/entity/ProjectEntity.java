@@ -1,5 +1,6 @@
 package cn.edu.buaa.act.fastwash.entity;
 
+import cn.edu.buaa.act.fastwash.data.Classification;
 import com.alibaba.fastjson.JSONObject;
 import lombok.Getter;
 import lombok.Setter;

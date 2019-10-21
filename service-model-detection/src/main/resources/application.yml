@@ -1,5 +1,5 @@
 RABBIT_MQ_HOST: 10.1.1.63
-RABBIT_MQ_PORT: 5673
+RABBIT_MQ_PORT: 5672
 EUREKA_HOST: 10.1.1.63
 server:
   port: 8027
@@ -31,7 +31,7 @@ auth:
   client:
     token-header: client-token
     id: service-model-detection
-    secret: ShOriSwn
+    secret: C71YQEra
 
 ribbon:
   eureka:

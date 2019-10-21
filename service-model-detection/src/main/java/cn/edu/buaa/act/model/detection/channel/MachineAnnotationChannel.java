@@ -1,7 +1,8 @@
 package cn.edu.buaa.act.model.detection.channel;
 
 
-import cn.edu.buaa.act.fastwash.constant.Constants;
+
+import cn.edu.buaa.act.model.detection.common.Constants;
 import org.springframework.cloud.stream.annotation.Input;
 import org.springframework.cloud.stream.annotation.Output;
 import org.springframework.messaging.MessageChannel;

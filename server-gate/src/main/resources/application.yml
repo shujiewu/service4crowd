@@ -85,6 +85,9 @@ zuul:
     fastwash:
       path: /fastwash/**
       serviceId: service-fastwash
+    model-detection:
+      path: /detection/**
+      serviceId: service-model-detection
 ribbon:
   eureka:
     enabled: true

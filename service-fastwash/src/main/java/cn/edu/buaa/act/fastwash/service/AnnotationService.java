@@ -1,7 +1,9 @@
 package cn.edu.buaa.act.fastwash.service;
 
-import cn.edu.buaa.act.common.context.BaseContextHandler;
 import cn.edu.buaa.act.fastwash.common.Constants;
+import cn.edu.buaa.act.fastwash.data.Annotation;
+import cn.edu.buaa.act.fastwash.data.DataItemEntity;
+import cn.edu.buaa.act.fastwash.data.TrainingItem;
 import cn.edu.buaa.act.fastwash.entity.*;
 import cn.edu.buaa.act.fastwash.service.api.IAnnotationService;
 import cn.edu.buaa.act.fastwash.service.api.IDataSetService;
@@ -15,13 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 
 import static cn.edu.buaa.act.fastwash.common.MongoUtil.toDocument;
 import static cn.edu.buaa.act.fastwash.common.ReadFile.getImageBinary;
@@ -79,6 +75,8 @@ public class AnnotationService implements IAnnotationService {
         return crowdAnnotationTask;
     }
 
+    // Todo：并发修改可能会丢失，从逻辑上让它串行执行
+    // TODO: 插入之前判断lastUpdate
     @Override
     public void submitCrowdAnnotation(String projectName, CrowdAnnotationTask crowdAnnotationTask) {
         MongoCollection<Document> mongoCollection =  mongoTemplate.getCollection(projectName+"_data");
@@ -98,8 +96,8 @@ public class AnnotationService implements IAnnotationService {
                 }
                 Map<String,List<Annotation>> classToAnnotation = new HashMap<>();
                 crowdAnnotationTask.getItems().forEach(annotation -> {
-                    classToAnnotation.computeIfAbsent(annotation.getClassification().getValue(),k -> new ArrayList<>());
-                    classToAnnotation.get(annotation.getClassification().getValue()).add(annotation);
+                    classToAnnotation.computeIfAbsent(annotation.getClassification().getId(),k -> new ArrayList<>());
+                    classToAnnotation.get(annotation.getClassification().getId()).add(annotation);
                 });
 
                 if(dataItemEntity.getAnnotations()==null){
@@ -111,7 +109,11 @@ public class AnnotationService implements IAnnotationService {
                     dataItemEntity.getAnnotations().get(classification).put(timeStamp,annotationList);
                 });
                 //trick time设置为string
-                dataItemEntity.setLastUpdateTime(String.valueOf(new Date().getTime()));
+                dataItemEntity.setLastUpdateTime(timeStamp);
+                if(dataItemEntity.getUpdateTime()==null){
+                    dataItemEntity.setUpdateTime(new ArrayList<>());
+                }
+                dataItemEntity.getUpdateTime().add(timeStamp);
                 mongoCollection.replaceOne(origin,toDocument(dataItemEntity));
             }
         } catch (Exception e) {
@@ -147,17 +149,22 @@ public class AnnotationService implements IAnnotationService {
                         return crowdAnnotationTask;
                     }else{
                         List<Annotation> annotationResult = new ArrayList<>();
+                        String timeStamp = dataItemEntity.getLastUpdateTime();
                         dataItemEntity.getAnnotations().forEach((classification,annotationMap)->{
-                            TreeMap<String, List<Annotation>> sortMap = new TreeMap<String, List<Annotation>>(new Comparator<String>() {
-                                @Override
-                                public int compare(String o1, String o2) {
-                                    return (int)(Long.parseLong(o2)-Long.parseLong(o1));
-                                }
-                            });
-                            sortMap.putAll(annotationMap);
-                            List<Annotation> annotationList = sortMap.firstEntry().getValue();
-                            annotationResult.addAll(annotationList);
+                            if(annotationMap.get(timeStamp)!=null)
+                                annotationResult.addAll(annotationMap.get(timeStamp));
                         });
+//                        dataItemEntity.getAnnotations().forEach((classification,annotationMap)->{
+//                            TreeMap<String, List<Annotation>> sortMap = new TreeMap<String, List<Annotation>>(new Comparator<String>() {
+//                                @Override
+//                                public int compare(String o1, String o2) {
+//                                    return (int)(Long.parseLong(o2)-Long.parseLong(o1));
+//                                }
+//                            });
+//                            sortMap.putAll(annotationMap);
+//                            List<Annotation> annotationList = sortMap.firstEntry().getValue();
+//                            annotationResult.addAll(annotationList);
+//                        });
                         crowdAnnotationTask.setItems(annotationResult);
                     }
                 }

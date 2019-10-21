@@ -3,9 +3,15 @@ package cn.edu.buaa.act.model.detection.controller;
 
 
 import cn.edu.buaa.act.common.msg.ObjectRestResponse;
-import cn.edu.buaa.act.model.detection.entity.DataItemEntity;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import cn.edu.buaa.act.fastwash.data.TrainingItem;
+import cn.edu.buaa.act.model.detection.channel.MachineAnnotationChannel;
+import cn.edu.buaa.act.model.detection.channel.ModelTrainingChannel;
+import cn.edu.buaa.act.model.detection.entity.InferenceTask;
+import cn.edu.buaa.act.model.detection.entity.TrainingTask;
+import cn.edu.buaa.act.model.detection.service.InferenceService;
+import cn.edu.buaa.act.model.detection.service.TrainingService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,8 +25,48 @@ import java.util.List;
 @RestController
 @RequestMapping("/annotation")
 public class AnnotationController {
-    @RequestMapping(value = "/model/inference", method = RequestMethod.GET, produces = "application/json")
-    public ObjectRestResponse inference(@RequestParam String projectName, @RequestParam String dataSetName, @RequestParam String imageId) throws Exception {
 
+    @Autowired
+    private InferenceService inferenceService;
+
+    @Autowired
+    private TrainingService trainingService;
+
+    @Autowired
+    private MachineAnnotationChannel machineAnnotationChannel;
+
+    @Autowired
+    private ModelTrainingChannel modelTrainingChannel;
+
+    @RequestMapping(value = "/model/inference", method = RequestMethod.POST, produces = "application/json")
+    public ObjectRestResponse inference(@RequestParam String projectName, @RequestParam String dataSetName, @RequestBody List<String> imageIdList) throws Exception {
+        InferenceTask inferenceTask = inferenceService.createInferenceTask(projectName,dataSetName,imageIdList);
+        if(inferenceTask==null){
+            ObjectRestResponse objectRestResponse = new ObjectRestResponse<String>().success(false);
+            objectRestResponse.setMessage("正在推断中");
+            return objectRestResponse;
+        }else {
+            if(machineAnnotationChannel.output().send(MessageBuilder.withPayload(inferenceTask).build())){
+                return new ObjectRestResponse<String>().success(true);
+            }else{
+                return new ObjectRestResponse<String>().success(false);
+            }
+        }
+    }
+
+    @RequestMapping(value = "/model/training", method = RequestMethod.GET, produces = "application/json")
+    public ObjectRestResponse training(@RequestParam String projectName, @RequestParam String dataSetName) throws Exception {
+        TrainingTask trainingTask = trainingService.createTrainingTask(projectName,dataSetName);
+        if(trainingTask==null){
+            ObjectRestResponse objectRestResponse = new ObjectRestResponse<String>().success(false);
+            objectRestResponse.setMessage("创建失败");
+            return objectRestResponse;
+        }else {
+            if(modelTrainingChannel.output().send(MessageBuilder.withPayload(trainingTask).build())){
+                return new ObjectRestResponse<String>().success(true);
+            }else{
+                return new ObjectRestResponse<String>().success(false);
+            }
+        }
     }
 }

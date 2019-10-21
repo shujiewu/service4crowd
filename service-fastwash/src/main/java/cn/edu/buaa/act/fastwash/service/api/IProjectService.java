@@ -1,11 +1,10 @@
 package cn.edu.buaa.act.fastwash.service.api;
 
-import cn.edu.buaa.act.fastwash.entity.DataItemEntity;
+
 import cn.edu.buaa.act.fastwash.entity.ProjectEntity;
+import cn.edu.buaa.act.fastwash.data.DataItemEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
-import java.util.List;
 
 public interface IProjectService {
 
