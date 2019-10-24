@@ -24,7 +24,7 @@ public class UserAuthRestInterceptor extends HandlerInterceptorAdapter {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         // 配置该注解，说明不进行用户拦截
-        System.out.println(request.getRequestURI());
+        // System.out.println(request.getRequestURI());
         return super.preHandle(request, response, handler);
     }
 

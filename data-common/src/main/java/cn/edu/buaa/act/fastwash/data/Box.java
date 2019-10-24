@@ -11,4 +11,12 @@ public class Box {
     private double w;
     private double h;
     private double score;
+    public Box(){}
+    public Box(double x,double y,double w,double h,double score){
+        this.x = x;
+        this.y = y;
+        this.w = w;
+        this.h = h;
+        this.score = score;
+    }
 }

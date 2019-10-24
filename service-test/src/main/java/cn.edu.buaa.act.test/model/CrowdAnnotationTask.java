@@ -1,4 +1,4 @@
-package cn.edu.buaa.act.fastwash.entity;
+package cn.edu.buaa.act.test.model;
 
 import cn.edu.buaa.act.fastwash.data.Annotation;
 import lombok.Getter;

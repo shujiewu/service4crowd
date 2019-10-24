@@ -54,6 +54,22 @@ public class AnnotationController {
         }
     }
 
+    @RequestMapping(value = "/model/inferenceAll", method = RequestMethod.POST, produces = "application/json")
+    public ObjectRestResponse inference(@RequestParam String projectName, @RequestParam String dataSetName) throws Exception {
+        InferenceTask inferenceTask = inferenceService.createInferenceTask(projectName,dataSetName);
+        if(inferenceTask==null){
+            ObjectRestResponse objectRestResponse = new ObjectRestResponse<String>().success(false);
+            objectRestResponse.setMessage("正在推断中");
+            return objectRestResponse;
+        }else {
+            if(machineAnnotationChannel.output().send(MessageBuilder.withPayload(inferenceTask).build())){
+                return new ObjectRestResponse<String>().success(true);
+            }else{
+                return new ObjectRestResponse<String>().success(false);
+            }
+        }
+    }
+
     @RequestMapping(value = "/model/training", method = RequestMethod.GET, produces = "application/json")
     public ObjectRestResponse training(@RequestParam String projectName, @RequestParam String dataSetName) throws Exception {
         TrainingTask trainingTask = trainingService.createTrainingTask(projectName,dataSetName);

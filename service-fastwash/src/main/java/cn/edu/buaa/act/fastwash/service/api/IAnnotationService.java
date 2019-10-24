@@ -6,4 +6,7 @@ public interface IAnnotationService {
     CrowdAnnotationTask findGroundTruthList(String projectName,String dataSetName,String imageId);
     void submitCrowdAnnotation(String projectName, CrowdAnnotationTask crowdAnnotationTask);
     CrowdAnnotationTask findLastAnnotationList(String projectName,String dataSetName,String imageId);
+    CrowdAnnotationTask findLastAnnotationList(String projectName,String classId);
+    CrowdAnnotationTask findLastAnnotationList(String projectName,String dataSetName,String imageId, String classId);
+    void submitCrowdTask(String projectName, CrowdAnnotationTask crowdAnnotationTask);
 }

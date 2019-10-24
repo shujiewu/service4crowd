@@ -16,6 +16,6 @@ public class TrainingItem {
     private String imageId;
     private List<Tag> tagList;
     //private Date lastUpdatedTime;
-    //groundTruth or crowd
+    //groundTruth or crowdAggregation
     private String type;
 }

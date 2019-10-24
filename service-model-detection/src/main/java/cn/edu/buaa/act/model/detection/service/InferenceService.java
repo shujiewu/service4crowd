@@ -3,10 +3,7 @@ package cn.edu.buaa.act.model.detection.service;
 import cn.edu.buaa.act.common.constant.NotifyChannelConstants;
 import cn.edu.buaa.act.common.context.BaseContextHandler;
 import cn.edu.buaa.act.common.msg.PlayLoadMessage;
-import cn.edu.buaa.act.fastwash.data.Annotation;
-import cn.edu.buaa.act.fastwash.data.Box;
-import cn.edu.buaa.act.fastwash.data.Classification;
-import cn.edu.buaa.act.fastwash.data.DataItemEntity;
+import cn.edu.buaa.act.fastwash.data.*;
 import cn.edu.buaa.act.model.detection.channel.MachineAnnotationChannel;
 import cn.edu.buaa.act.model.detection.channel.ModelTrainingChannel;
 import cn.edu.buaa.act.model.detection.common.Constants;
@@ -47,6 +44,20 @@ public class InferenceService {
         return inferenceTaskRepository.findInferenceTasksByUserIdAndProjectNameAndDataSetNameAndStatus(BaseContextHandler.getUserID(),projectName,dataSetName,Constants.INFERENCE_TASK_CREATED);
     }
 
+    public InferenceTask createInferenceTask(String projectName, String dataSetName){
+        Set<String> imageIdSet = new HashSet<>();
+        MongoCollection<Document> mongoCollection =  mongoTemplate.getCollection(projectName+"_data");
+        try (MongoCursor<Document> cursor = mongoCollection.find().iterator()){
+            while(cursor.hasNext()){
+                DataItemEntity dataItemEntity = JSONObject.parseObject(cursor.next().toJson(), DataItemEntity.class);
+                imageIdSet.add(dataItemEntity.getImageId());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return createInferenceTask(projectName,dataSetName,new ArrayList<>(imageIdSet));
+    }
+
     // TODO: 并发问题，应该投入队列
     public InferenceTask createInferenceTask(String projectName, String dataSetName,List<String> imageIdList){
         Set<String> imageIdSet = new HashSet<>(imageIdList);
@@ -70,6 +81,27 @@ public class InferenceService {
         return inferenceTaskRepository.insert(inferenceTask);
     }
 
+//    private void insertMachineTask(String projectName, String dataSetName, Set<String> imageIdList){
+//        MongoCollection<Document> mongoCollection =  mongoTemplate.getCollection(projectName+"_task");
+//        try (MongoCursor<Document> cursor = mongoCollection.find().iterator()) {
+//            while (cursor.hasNext()) {
+//                Document origin = cursor.next();
+//                String str = origin.toJson();
+//                TaskItemEntity taskItemEntity = JSONObject.parseObject(str, TaskItemEntity.class);
+//                imageIdList.remove(taskItemEntity.getImageId());
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        List<TaskItemEntity> taskItemEntities = new ArrayList<>();
+//        imageIdList.forEach(imageId->{
+//            TaskItemEntity taskItemEntity = new TaskItemEntity();
+//            taskItemEntity.set
+//        });
+//
+//    }
+
+
     @Async("asyncExecutor")
     public CompletableFuture<String> doInference(String projectName, String dataSetName, List<String> imageId) throws InterruptedException {
 
@@ -89,7 +121,7 @@ public class InferenceService {
                 originTask.setInferenceResult(inferenceTask.getInferenceResult());
                 inferenceTaskRepository.save(originTask);
 
-                submitMachineAnnotation(inferenceTask.getProjectName(),
+                insertMachineAnnotation(inferenceTask.getProjectName(),
                         inferenceTask.getDataSetName(),
                         inferenceTask.getImageIdList(),
                         inferenceTask.getInferenceResult());
@@ -167,6 +199,79 @@ public class InferenceService {
         }
     }
 
+    private void insertMachineAnnotation(String projectName, String dataSetName, List<String> imageIdList, JSONObject inferenceObject) {
+        MongoCollection<Document> mongoCollection =  mongoTemplate.getCollection(projectName+"_task");
+        BasicDBObject query = new BasicDBObject();
+        BasicDBList idValues = new BasicDBList();
+        idValues.addAll(imageIdList);
+        query.put("imageId", new BasicDBObject("$in", idValues));
+        query.put("dataSetName",dataSetName);
+        try (MongoCursor<Document> cursor = mongoCollection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                Document origin = cursor.next();
+                String str = origin.toJson();
+                TaskItemEntity taskItemEntity = JSONObject.parseObject(str, TaskItemEntity.class);
+                taskItemEntity.setId(null);
+                if (Constants.TASK_STATUS_UNANNOTATED.equals(taskItemEntity.getStatus())) {
+                    taskItemEntity.setStatus(Constants.TASK_STATUS_MACHINE_ANNOTATED);
+                }
 
+                JSONObject imageResult = inferenceObject.getJSONObject(taskItemEntity.getImageId());
+                if (imageResult == null) {
+                    continue;
+                }
+                JSONObject classToAnnResult = imageResult.getJSONObject("annotation");
+                if (classToAnnResult == null) {
+                    continue;
+                }
+                String cls = taskItemEntity.getClassId();
+                JSONArray clsBoxArray = classToAnnResult.getJSONArray(cls);
+                List<Annotation> annotations = new ArrayList<>();
+                if(clsBoxArray!=null){
+                    for (int i = 0; i < clsBoxArray.size(); i++) {
+                        JSONObject bbox = clsBoxArray.getJSONObject(i);
+                        Annotation annotation = new Annotation();
+                        Box box = new Box();
+                        box.setX(bbox.getDouble("x"));
+                        box.setY(bbox.getDouble("y"));
+                        box.setW(bbox.getDouble("w"));
+                        box.setH(bbox.getDouble("h"));
+                        box.setScore(bbox.getDouble("score"));
+                        annotation.setBox(box);
+                        annotation.setModelId("baseModel");
+                        annotation.setType("modelInference");
+                        Classification classification = new Classification();
+                        classification.setId(cls);
+                        // classification.setValue();
+                        annotation.setClassification(classification);
+                        annotations.add(annotation);
+                    }
+                }
+                if (taskItemEntity.getAnnotations() == null) {
+                    taskItemEntity.setAnnotations(new HashMap<>());
+                }
+                String timeStamp = Long.toString(new Date().getTime());
+                taskItemEntity.getAnnotations().put(timeStamp, annotations);
+
+                taskItemEntity.setLastUpdateTime(timeStamp);
+                if (taskItemEntity.getUpdateTime() == null) {
+                    taskItemEntity.setUpdateTime(new ArrayList<>());
+                }
+                taskItemEntity.getUpdateTime().add(timeStamp);
+
+                if(taskItemEntity.getWorkerList()==null){
+                    taskItemEntity.setWorkerList(new ArrayList<>());
+                }
+                taskItemEntity.getWorkerList().add("baseModel");
+                taskItemEntity.setIterations(taskItemEntity.getIterations()+1);
+                if(taskItemEntity.getIterations()>=Constants.ANNOTATION_MAX_PER_CLASS){
+                    taskItemEntity.setStatus(Constants.TASK_STATUS_COMPLETED);
+                }
+                mongoCollection.replaceOne(origin, toDocument(taskItemEntity));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 }

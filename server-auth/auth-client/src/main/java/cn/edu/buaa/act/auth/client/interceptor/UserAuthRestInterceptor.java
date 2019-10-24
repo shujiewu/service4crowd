@@ -32,7 +32,7 @@ public class UserAuthRestInterceptor extends HandlerInterceptorAdapter {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         HandlerMethod handlerMethod = (HandlerMethod) handler;
-        System.out.println(request.getRequestURI());
+        // System.out.println(request.getRequestURI());
         // 配置该注解，说明不进行用户拦截
         IgnoreUserToken annotation = handlerMethod.getBeanType().getAnnotation(IgnoreUserToken.class);
         if (annotation == null) {

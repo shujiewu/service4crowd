@@ -19,4 +19,5 @@ public interface ProjectRepository extends MongoRepository<ProjectEntity, String
     Page<ProjectEntity> findProjectEntitiesByUserId(String userId, Pageable pageable);
     ProjectEntity findProjectEntityByNameAndUserId(String name, String userId);
     ProjectEntity findProjectEntityByName(String name);
+    Page<ProjectEntity> findProjectEntitiesByStatus(Pageable pageable, String status);
 }

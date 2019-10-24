@@ -25,7 +25,9 @@ public class ProjectEntity {
     private List<JSONObject> properties;
     private String userId;
     private String status;
-    private double progress;
+    private int total;
+    private int done;
+    private int run;
     private Date createTime;
     private Date endTime;
     private List<String> imageId;

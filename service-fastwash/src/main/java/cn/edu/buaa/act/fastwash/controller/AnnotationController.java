@@ -19,15 +19,23 @@ public class AnnotationController {
 
     @Autowired
     IAnnotationService annotationService;
-
+//@RequestParam(value = "random", required = false) String classValue
     @RequestMapping(value = "/image/{action}", method = RequestMethod.GET, produces = "application/json")
-    public ObjectRestResponse annotation(@PathVariable String action, @RequestParam String projectName, @RequestParam String dataSetName, @RequestParam String imageId) throws Exception {
+    public ObjectRestResponse annotation(@PathVariable String action, @RequestParam String projectName, @RequestParam String dataSetName,
+                                         @RequestParam(defaultValue = "random", required = false) String imageId,
+                                         @RequestParam(defaultValue = "random", required = false) String classValue
+                                         ) throws Exception {
         if("groundtruth".equals(action)){
             CrowdAnnotationTask crowdAnnotationTask = annotationService.findGroundTruthList(projectName,dataSetName,imageId);
             return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(true);
         }
         //如果没有
         if("improve".equals(action)){
+            CrowdAnnotationTask crowdAnnotationTask = annotationService.findLastAnnotationList(projectName,dataSetName,imageId);
+            return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(true);
+        }
+
+        if("annotate".equals(action)){
             CrowdAnnotationTask crowdAnnotationTask = annotationService.findLastAnnotationList(projectName,dataSetName,imageId);
             return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(true);
         }
@@ -42,8 +50,28 @@ public class AnnotationController {
         return new ObjectRestResponse<>().success(true);
     }
 
-//    @RequestMapping(value = "/model/inference", method = RequestMethod.POST, produces = "application/json")
-//    public ResponseEntity<Object> getTruthInferenceAlgorithm(@RequestBody List<DataItemEntity> dataItemEntityList) throws Exception {
-//        return new ResponseEntity<Object>(truthInferenceService.queryTruthInferenceEntityById(algorithmId), HttpStatus.OK);
-//    }
+    @RequestMapping(value = "/task/next", method = RequestMethod.GET, produces = "application/json")
+    public ObjectRestResponse getNextTask(@RequestParam String projectName, @RequestParam String dataSetName,@RequestParam(defaultValue = "0", required = false) String classId){
+        CrowdAnnotationTask crowdAnnotationTask = annotationService.findLastAnnotationList(projectName,classId);
+        if(crowdAnnotationTask.getDetImg()!=null){
+            return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(true);
+        }else{
+            return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(false);
+        }
+    }
+    @RequestMapping(value = "/task/submit", method = RequestMethod.POST, produces = "application/json")
+    public ObjectRestResponse submitTask(@RequestBody CrowdAnnotationTask crowdAnnotationTask,@RequestParam String projectName){
+        annotationService.submitCrowdTask(projectName,crowdAnnotationTask);
+        return new ObjectRestResponse<>().success(true);
+    }
+
+    @RequestMapping(value = "/task", method = RequestMethod.GET, produces = "application/json")
+    public ObjectRestResponse getTask(@RequestParam String projectName, @RequestParam String dataSetName,@RequestParam String imageId, @RequestParam String classId){
+        CrowdAnnotationTask crowdAnnotationTask = annotationService.findLastAnnotationList(projectName,dataSetName, imageId, classId);
+        if(crowdAnnotationTask.getDetImg()!=null){
+            return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(true);
+        }else{
+            return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(false);
+        }
+    }
 }

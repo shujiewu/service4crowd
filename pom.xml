@@ -26,6 +26,7 @@
         <module>data-common</module>
         <module>service-fastwash</module>
         <module>service-model-detection</module>
+        <module>service-test</module>
     </modules>
 
     <parent>
