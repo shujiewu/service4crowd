@@ -38,7 +38,6 @@ public class MetaController {
     @RequestMapping(value = "/metaData/{dataName}/load", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<Object> loadMeta(@PathVariable String dataName,@RequestParam("userId") String userId) {
         Map map = new HashMap<>();
-        System.out.println(userId);
         MetaEntity result = metaService.findByName(dataName, userId);
         if (result != null) {
             List<UnitEntity> unitEntityList = unitService.findUnitByIdList(result.getDataId());

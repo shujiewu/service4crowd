@@ -26,7 +26,6 @@ public class ServiceManageConfiguration {
 
     @Bean
     public Marathon marathon(MarathonDeployProperties marathonProperties) {
-        System.out.println(1111+marathonProperties.getApiEndpoint());
         return MarathonClient.getInstance(marathonProperties.getApiEndpoint());
     }
 }

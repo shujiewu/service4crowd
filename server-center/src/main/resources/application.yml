@@ -1,9 +1,9 @@
+EUREKA_HOST: 10.1.1.63
 server:
   port: 8761
-
 eureka:
   instance:
-    hostname: localhost
+    hostname: ${EUREKA_HOST:localhost}
   client:
     # 表示是否将自己注册到Eureka Server，默认为true。由于当前这个应用就是Eureka Server，故而设为false
     registerWithEureka: false

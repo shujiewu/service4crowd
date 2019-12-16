@@ -76,6 +76,7 @@ public class ProcessDefinitionService{
                 ProcessDefinition processDefinition= repositoryService.createProcessDefinitionQuery().deploymentId(deployment.getId()).singleResult();//latestVersion().
                 Map<String, Object> variables = new HashMap<String, Object>();
                 variables.put("userId", BaseContextHandler.getUserID());
+                variables.put("userToken", BaseContextHandler.getToken());
                 variables.put("process_id",model.getKey().replaceAll(" ",""));
                 ProcessInstance processInstance = runtimeService.startProcessInstanceById(processDefinition.getId(), variables);
 

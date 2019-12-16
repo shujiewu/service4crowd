@@ -49,7 +49,7 @@ public class AbstractModel {
   @Column(name = "version")
   protected int version;
 
-  @Column(name = "model_editor_json")
+  @Column(name = "model_editor_json",length = 16777215)
   protected String modelEditorJson;
 
   @Column(name = "model_comment")

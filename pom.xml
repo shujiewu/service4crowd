@@ -12,10 +12,8 @@
         <module>server-auth</module>
         <module>server-common</module>
         <module>service-workflow</module>
-        <module>service-mongodb</module>
         <module>service-spark</module>
         <module>server-monitor</module>
-        <module>server-trace</module>
         <module>service-algorithm</module>
         <module>service-manage</module>
         <module>service-hadoop</module>
@@ -27,6 +25,7 @@
         <module>service-fastwash</module>
         <module>service-model-detection</module>
         <module>service-test</module>
+        <module>service-agent</module>
     </modules>
 
     <parent>

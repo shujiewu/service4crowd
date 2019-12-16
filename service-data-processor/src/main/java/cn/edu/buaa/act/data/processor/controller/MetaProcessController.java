@@ -1,13 +1,9 @@
 package cn.edu.buaa.act.data.processor.controller;
 
-import cn.edu.buaa.act.data.entity.UnitEntity;
 import cn.edu.buaa.act.data.processor.common.Constraint;
-import cn.edu.buaa.act.data.service.IUnitService;
-import cn.edu.buaa.act.data.service.impl.UnitServiceImpl;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

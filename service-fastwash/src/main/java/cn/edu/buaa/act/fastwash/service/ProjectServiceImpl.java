@@ -84,6 +84,7 @@ public class ProjectServiceImpl implements IProjectService{
         List<Document> dataItemEntities = new ArrayList<>();
         List<Document> groundTruthItems = new ArrayList<>();
 
+
         Map<String,List<Tag>> groundTruthMap = new HashMap<>();
         Map<String,Category> categoryMap = new HashMap<>();
         dataSetEntity.getCategories().forEach(category -> {
@@ -109,8 +110,8 @@ public class ProjectServiceImpl implements IProjectService{
             groundTruthMap.get(imageId).add(tag);
         });
 
-        if(projectEntity.getImageId()!=null){
-            Set<String> dataItemList = new HashSet<>(projectEntity.getImageId());
+        if(projectEntity.getImageIdList()!=null){
+            Set<String> dataItemList = new HashSet<>(projectEntity.getImageIdList());
             dataSetEntity.getImages().forEach(image -> {
                 if(dataItemList.contains(image.getId())){
                     DataItemEntity dataItemEntity = new DataItemEntity();
@@ -156,8 +157,8 @@ public class ProjectServiceImpl implements IProjectService{
         MongoCollection<Document> dataCollection = mongoTemplate.getCollection(projectEntity.getName()+"_data");
         dataCollection.insertMany(dataItemEntities);
 
-        MongoCollection<Document> groundTruthCollection = mongoTemplate.getCollection(projectEntity.getName()+"_result");
-        groundTruthCollection.insertMany(groundTruthItems);
+//        MongoCollection<Document> groundTruthCollection = mongoTemplate.getCollection(projectEntity.getName()+"_result");
+//        groundTruthCollection.insertMany(groundTruthItems);
 
         projectEntity.setCreateTime(new Date());
         projectEntity.setStatus(PROJECT_STATUS_CREATE);
@@ -360,6 +361,129 @@ public class ProjectServiceImpl implements IProjectService{
             mongoTemplate.dropCollection(projectEntity.getName()+"_data");
         }
         projectRepository.delete(projectEntity);
+    }
+
+    @Override
+    public ProjectEntity insertProcessProject(String taskId, ProjectEntity projectEntity) {
+        projectEntity.setUserId(BaseContextHandler.getUserID());
+        if(projectRepository.findProjectEntityByName(taskId+"_"+BaseContextHandler.getUserID())!=null){
+            throw new ProjectInvalidException("项目名已存在");
+        }
+        //重新设置项目名
+        projectEntity.setName(taskId+"_"+BaseContextHandler.getUserID());
+        projectEntity.setProperties(new ArrayList<>());
+        projectEntity.setMaxWorkerPerTask(projectEntity.getMaxWorkerPerTask());
+        projectEntity.setType("Detection");
+
+        //hack设置
+        ProjectEntity projectEntity1 = projectRepository.findProjectEntityByName("test10_5");
+        projectEntity.setClassification(projectEntity1.getClassification());
+
+        //存放dataItem
+        mongoTemplate.createCollection(projectEntity.getName()+"_data");
+        //存放任务
+        mongoTemplate.createCollection(projectEntity.getName()+"_task");
+        //存放groundTruth和汇聚结果
+        mongoTemplate.createCollection(projectEntity.getName()+"_result");
+
+        if(!insertDataAndResultCol(projectEntity)){
+            throw new ProjectInvalidException("创建项目失败");
+        }
+        if(projectEntity.getId()==null){
+            throw new ProjectInvalidException("创建项目失败");
+        }
+        try {
+            publishProcessProject(projectEntity);
+        }catch (Exception e){
+            throw new ProjectInvalidException("部署项目失败");
+        }
+        return projectEntity;
+    }
+    @Autowired
+    AnnotationService annotationService;
+
+    public boolean publishProcessProject(ProjectEntity projectEntity){
+        List<DataItemEntity> dataItemEntities = new LinkedList<>();
+        MongoCollection<Document> dataCollection = mongoTemplate.getCollection(projectEntity.getName()+"_data");
+        BasicDBObject query = new BasicDBObject();
+        query.put("status", Constants.IMAGE_STATUS_UNANNOTATED);
+        try (MongoCursor<Document> cursor = dataCollection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                Document origin = cursor.next();
+                String str = origin.toJson();
+                DataItemEntity dataItemEntity = JSONObject.parseObject(str, DataItemEntity.class);
+                dataItemEntities.add(dataItemEntity);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        Map<String,ImageToClass> imageToClassMap = new HashMap<>();
+        projectEntity.getImageToClass().forEach(imageToClass -> {
+            imageToClassMap.put(imageToClass.getImageId(),imageToClass);
+        });
+
+        Map<String,List<Annotation>> imageToAnnotationMap =new HashMap<>();
+        projectEntity.getImageToAnnotation().forEach(imageToAnn -> {
+            imageToAnnotationMap.put(imageToAnn.getImageId(),imageToAnn.getAnnotationList());
+        });
+
+        List<TaskItemEntity> taskItemEntities = new ArrayList<>();
+        List<Document> taskItemDocs = new ArrayList<>();
+        dataItemEntities.forEach(dataItemEntity -> {
+            if(imageToClassMap.containsKey(dataItemEntity.getImageId())){
+                Set<String> classIds = new HashSet<>();
+                imageToClassMap.get(dataItemEntity.getImageId()).getClassificationList().forEach(tag -> {
+                    classIds.add(tag.getId());
+                });
+                String timeStamp =  Long.toString(new Date().getTime());
+                classIds.forEach(classId ->{
+                    TaskItemEntity taskItemEntity = new TaskItemEntity();
+                    taskItemEntity.setStatus(Constants.TASK_STATUS_UNANNOTATED);
+                    taskItemEntity.setClassId(classId);
+                    taskItemEntity.setDataSetName(projectEntity.getDataSetName());
+                    taskItemEntity.setFileName(dataItemEntity.getFileName());
+
+                    List<Annotation> classAnnotation = new ArrayList<>();
+                    if(imageToAnnotationMap.containsKey(dataItemEntity.getImageId())){
+                        imageToAnnotationMap.get(dataItemEntity.getImageId()).forEach(annotation -> {
+                            if(annotation.getClassification().getId().equals(classId)){
+                                classAnnotation.add(annotation);
+                            }
+                        });
+                    }
+                    taskItemEntity.setMaxWorkerPerTask(projectEntity.getMaxWorkerPerTask());
+                    taskItemEntity.setIterations(1);
+                    taskItemEntity.setLastUpdateTime(timeStamp);
+                    taskItemEntity.setUpdateTime(new ArrayList<>());
+                    taskItemEntity.getUpdateTime().add(timeStamp);
+
+                    taskItemEntity.setWorkerList(new ArrayList<>());
+                    taskItemEntity.getWorkerList().add("baseModel");
+
+                    taskItemEntity.setChange(new ArrayList<>());
+                    taskItemEntity.getChange().add(false);
+
+                    taskItemEntity.setAnnotations(new HashMap<>());
+                    taskItemEntity.getAnnotations().put(timeStamp,classAnnotation);
+
+                    taskItemEntity.setImageId(dataItemEntity.getImageId());
+                    taskItemEntities.add(taskItemEntity);
+                    taskItemDocs.add(toDocument(taskItemEntity));
+                });
+            }
+            dataCollection.updateOne(Filters.eq("imageId",dataItemEntity.getImageId()), new Document("$set",new Document("status",Constants.IMAGE_STATUS_ANNOTATING)));
+        });
+        MongoCollection<Document> taskCollection = mongoTemplate.getCollection(projectEntity.getName()+"_task");
+        taskCollection.insertMany(taskItemDocs);
+
+        projectEntity.setStatus(Constants.PROJECT_STATUS_PUBLISH);
+        projectEntity.setRun(projectEntity.getRun()+dataItemEntities.size());
+        projectRepository.save(projectEntity);
+
+        annotationService.addToRuntimeProject(projectEntity.getName());
+        return true;
     }
 }
 

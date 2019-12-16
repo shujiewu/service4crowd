@@ -1,9 +1,12 @@
 package cn.edu.buaa.act.management.controller;
 
+import cn.edu.buaa.act.auth.client.annotation.IgnoreUserToken;
 import cn.edu.buaa.act.common.entity.MicroService;
+import cn.edu.buaa.act.common.entity.Processor;
 import cn.edu.buaa.act.common.msg.TableResultResponse;
 import cn.edu.buaa.act.management.entity.ServiceRegistration;
 import cn.edu.buaa.act.management.service.AlgorithmConfig;
+import cn.edu.buaa.act.management.service.ProcessorConfig;
 import cn.edu.buaa.act.management.service.ServiceConfig;
 import cn.edu.buaa.act.management.service.ServiceRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,12 +31,15 @@ public class ConfigController {
     @Autowired
     AlgorithmConfig algorithmConfig;
 
+    @Autowired
+    ProcessorConfig processorConfig;
 
     @Autowired
     ServiceRegistry serviceRegistry;
 
     @RequestMapping(value = "/info/list", method = RequestMethod.GET)
     @ResponseStatus(HttpStatus.OK)
+    @IgnoreUserToken
     public TableResultResponse<MicroService> infoList() {
         List<MicroService> microServiceList = serviceConfig.getInfo();
         return new TableResultResponse<>(microServiceList.size(),microServiceList);
@@ -47,9 +53,12 @@ public class ConfigController {
         if(serviceRegistration.getPropertyId()!=null){
             if(type.equals("WEB")){
                 return serviceConfig.getConfiguration(serviceRegistration.getPropertyId());
-            }
-            else {
+            } else if(type.equals("ALGORITHM")){
                 return algorithmConfig.getConfiguration(serviceRegistration.getPropertyId());
+            }else if(type.equals("PROCESSOR")) {
+                return processorConfig.getConfiguration(serviceRegistration.getPropertyId());
+            }else{
+                return null;
             }
         }
         else{

@@ -1,5 +1,6 @@
 package cn.edu.buaa.act.fastwash.entity;
 
+import cn.edu.buaa.act.fastwash.data.Annotation;
 import cn.edu.buaa.act.fastwash.data.Classification;
 import com.alibaba.fastjson.JSONObject;
 import lombok.Getter;
@@ -8,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author wsj
@@ -30,5 +32,9 @@ public class ProjectEntity {
     private int run;
     private Date createTime;
     private Date endTime;
-    private List<String> imageId;
+    private List<String> imageIdList;
+
+    private List<ImageToClass> imageToClass;
+    private List<ImageToAnnotation> imageToAnnotation;
+    private int maxWorkerPerTask;
 }

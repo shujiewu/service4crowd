@@ -6,6 +6,7 @@ import cn.edu.buaa.act.fastwash.data.TrainingItem;
 import cn.edu.buaa.act.model.detection.channel.ModelTrainingChannel;
 import cn.edu.buaa.act.model.detection.common.Constants;
 import cn.edu.buaa.act.model.detection.entity.InferenceTask;
+import cn.edu.buaa.act.model.detection.entity.TrainingRequest;
 import cn.edu.buaa.act.model.detection.entity.TrainingTask;
 import cn.edu.buaa.act.model.detection.repository.TrainingTaskRepository;
 import com.alibaba.fastjson.JSONObject;
@@ -88,6 +89,29 @@ public class TrainingService {
                 originTask.setEndTime(new Date());
                 trainingTaskRepository.save(originTask);
             }
+        }
+    }
+
+
+
+
+    public TrainingTask createProcessTrainingTask(String processInstanceId, TrainingRequest trainingRequest){
+        List<String> imageIdList = trainingRequest.getImageIdList();
+        Set<String> imageIdSet = new TreeSet<String>((Comparator<String>) (o1, o2) -> (Integer.parseInt(o1)-Integer.parseInt(o2)));
+        imageIdSet.addAll(imageIdList);
+        TrainingTask trainingTask = new TrainingTask();
+        trainingTask.setCreateTime(new Date());
+        trainingTask.setDataSetName(trainingRequest.getDataSetName());
+        trainingTask.setUserId(BaseContextHandler.getUserID());
+        trainingTask.setImageIdList(new ArrayList<>(imageIdSet));
+        trainingTask.setProcessInstanceId(processInstanceId);
+        trainingTask.setStatus(Constants.TRAINING_TASK_CREATED);
+        trainingTask.setTrainingItemList(trainingRequest.getTrainingItemList());
+        trainingTask = trainingTaskRepository.insert(trainingTask);
+        if(trainingTask.getId()!=null){
+            return trainingTask;
+        }else{
+            return null;
         }
     }
 }

@@ -3,11 +3,10 @@ package cn.edu.buaa.act.fastwash.service;
 import cn.edu.buaa.act.common.context.BaseContextHandler;
 import cn.edu.buaa.act.common.util.Query;
 import cn.edu.buaa.act.fastwash.common.Constants;
-import cn.edu.buaa.act.fastwash.data.Annotation;
-import cn.edu.buaa.act.fastwash.data.DataItemEntity;
-import cn.edu.buaa.act.fastwash.data.TaskItemEntity;
-import cn.edu.buaa.act.fastwash.data.TrainingItem;
+import cn.edu.buaa.act.fastwash.common.MongoUtil;
+import cn.edu.buaa.act.fastwash.data.*;
 import cn.edu.buaa.act.fastwash.entity.*;
+import cn.edu.buaa.act.fastwash.repository.ProjectRepository;
 import cn.edu.buaa.act.fastwash.service.api.IAnnotationService;
 import cn.edu.buaa.act.fastwash.service.api.IDataSetService;
 import cn.edu.buaa.act.fastwash.service.api.IProjectService;
@@ -66,7 +65,7 @@ public class AnnotationService implements IAnnotationService {
         MongoCollection<Document> mongoCollection = mongoTemplate.getCollection(projectName+"_result");
         BasicDBObject query = new BasicDBObject();
         query.put("imageId",imageId);
-        query.put("type","GroundTruth");
+        query.put("type",Constants.TRAINING_ITEM_GROUND_TRUTH);
         MongoCursor<Document> cursor = mongoCollection.find(query).iterator();
         List<Annotation> annotations = new ArrayList<>();
         try {
@@ -310,7 +309,6 @@ public class AnnotationService implements IAnnotationService {
         resetRuntimeStatus(projectName);
         // addToQueue
         addClassTaskToQueue(projectName,Integer.MAX_VALUE);
-
     }
 
     @Override
@@ -361,6 +359,7 @@ public class AnnotationService implements IAnnotationService {
             crowdAnnotationTask.setId(taskItemEntity.getId());
             crowdAnnotationTask.setDetImg(getImage(taskItemEntity.getDataSetName(),taskItemEntity.getImageId()));
             crowdAnnotationTask.setClassId(taskItemEntity.getClassId());
+            crowdAnnotationTask.setCreateTime(Long.toString(new Date().getTime()));
             if(taskItemEntity.getAnnotations()!=null){
                 crowdAnnotationTask.setItems(taskItemEntity.getAnnotations().get(taskItemEntity.getLastUpdateTime()));
             }
@@ -436,7 +435,10 @@ public class AnnotationService implements IAnnotationService {
                 });
 
                 taskItemEntity.getAnnotations().put(timeStamp,crowdAnnotationTask.getItems());
-
+                if(taskItemEntity.getCreateTime()==null){
+                    taskItemEntity.setCreateTime(new ArrayList<>());
+                }
+                taskItemEntity.getCreateTime().add(crowdAnnotationTask.getCreateTime());
 
                 taskItemEntity.setId(null);
                 mongoCollection.replaceOne(Filters.eq("_id",
@@ -460,42 +462,314 @@ public class AnnotationService implements IAnnotationService {
     private Logger logger = LoggerFactory.getLogger(AnnotationService.class);
 
     private AtomicBoolean start = new AtomicBoolean(true);
-     @Scheduled(fixedDelay = 6000)
+    @Scheduled(fixedDelay = 50000)
     public void addTaskToQueue() {
-        if(start.get()){
-            // 添加到队列
-            initQueue("test7_5");
-            start.set(false);
-            return;
-        }
-        taskQueueMap.forEach((projectName,taskQueueMap)-> {
-              addClassTaskToQueue(projectName,Integer.MAX_VALUE);
-//            taskQueueMap.forEach((classId,taskQueue)->{
-//                if(taskQueue.size()<Constants.TASK_QUEUE_MIN_SIZE){
-//                    MongoCollection<Document> mongoCollection = mongoTemplate.getCollection(projectName+"_task");
-//                    //找到状态不是runtime的且迭代次数不超过最大的
-//                    BasicDBObject query = new BasicDBObject();
-//                    query.put("iterations", new BasicDBObject("$lte", Constants.ANNOTATION_MAX_PER_CLASS));
-//                    query.put("status", new BasicDBObject("$ne", Constants.TASK_STATUS_UNANNOTATED).append("$ne", Constants.IMAGE_STATUS_COMPLETED));
-//                    MongoCursor<Document> cursor = mongoCollection.find(query).iterator();
-//                    int targetNum = Constants.TASK_QUEUE_DEFAULT_SIZE - taskQueue.size();
-//                    try {
-//                        while (cursor.hasNext()) {
-//                            Document origin = cursor.next();
-//                            String str = origin.toJson();
-//                            targetNum--;
-//                            if(targetNum==0){
-//                                break;
-//                            }
-//                        }
-//                    } catch (Exception e) {
-//                        e.printStackTrace();
-//                    } finally {
-//                        cursor.close();
-//                    }
-//                }
-//            });
-        });
+//        if(start.get()){
+//            // 添加到队列
+//            // initQueue("test7_5");
+//            initQueue("test10_5");
+//            start.set(false);
+//            return;
+//        }
+//        taskQueueMap.forEach((projectName,taskQueueMap)-> {
+//              addClassTaskToQueue(projectName,Integer.MAX_VALUE);
+//        });
+    }
 
+
+    // new API
+
+    public void addToRuntimeProject(String projectName){
+        if(taskQueueMap.get(projectName)==null){
+            taskQueueMap.put(projectName,new ConcurrentHashMap<>());
+        }
+        ConcurrentHashMap<String,ConcurrentLinkedQueue<TaskItemEntity>> projectMap = taskQueueMap.get(projectName);
+        MongoCollection<Document> mongoCollection = mongoTemplate.getCollection(projectName+"_task");
+
+        BasicDBObject query = new BasicDBObject();
+        BasicDBList values = new BasicDBList();
+        values.add(new BasicDBObject("status", new BasicDBObject("$ne", Constants.TASK_STATUS_CROWD_RUNTIME)));
+        values.add(new BasicDBObject("status", new BasicDBObject("$ne", Constants.TASK_STATUS_COMPLETED)));
+        query.put("$and", values);
+        int count = 0;
+        try (MongoCursor<Document> cursor = mongoCollection.find(query).iterator()) {
+            while (cursor.hasNext()) {
+                Document origin = cursor.next();
+                String str = origin.toJson();
+                TaskItemEntity taskItemEntity = JSONObject.parseObject(str, TaskItemEntity.class);
+                if (projectMap.get(taskItemEntity.getClassId()) == null) {
+                    projectMap.put(taskItemEntity.getClassId(), new ConcurrentLinkedQueue<>());
+                }
+                projectMap.get(taskItemEntity.getClassId()).offer(taskItemEntity);
+                count++;
+                mongoCollection.updateOne(Filters.eq("_id",new ObjectId(JSONObject.parseObject(taskItemEntity.getId()).get("$oid").toString())), new Document("$set",new Document("status",Constants.TASK_STATUS_CROWD_RUNTIME)));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        recentCompleteTaskMap.put(projectName,new ConcurrentLinkedQueue<>());
+        logger.info("Add To Queue Size ="+count);
+    }
+
+    private ConcurrentHashMap<String,ConcurrentLinkedQueue<TaskItemEntity>> recentCompleteTaskMap =  new ConcurrentHashMap<>();
+
+    public List<TaskItemEntity> getRecentCompleteTasks(String projectName){
+        List<TaskItemEntity> taskItemEntities = new ArrayList<>();
+        if(recentCompleteTaskMap.containsKey(projectName)){
+            ConcurrentLinkedQueue<TaskItemEntity> taskQueue = recentCompleteTaskMap.get(projectName);
+            recentCompleteTaskMap.put(projectName,new ConcurrentLinkedQueue<>());
+            taskItemEntities.addAll(taskQueue);
+        }
+        return taskItemEntities;
+    }
+
+    public void addToRuntimeProject(String projectName,List<String> taskItemEntityIdList) throws Exception {
+        if(taskItemEntityIdList==null){
+            throw new Exception("taskItemIdList is null");
+        }
+        logger.info("addToQueue:"+taskItemEntityIdList);
+        MongoCollection<Document> mongoCollection = mongoTemplate.getCollection(projectName+"_task");
+        BasicDBObject query = new BasicDBObject();
+        ConcurrentHashMap<String,ConcurrentLinkedQueue<TaskItemEntity>> projectMap = taskQueueMap.get(projectName);
+        taskItemEntityIdList.forEach(taskId->{
+            try (MongoCursor<Document> cursor = mongoCollection.find(Filters.eq("_id",
+                    new ObjectId(taskId))).iterator()) {
+                if (cursor.hasNext()) {
+                    Document origin = cursor.next();
+                    String str = origin.toJson();
+                    TaskItemEntity taskItemEntity = JSONObject.parseObject(str, TaskItemEntity.class);
+                    if (projectMap.get(taskItemEntity.getClassId()) == null) {
+                        projectMap.put(taskItemEntity.getClassId(), new ConcurrentLinkedQueue<>());
+                    }
+                    projectMap.get(taskItemEntity.getClassId()).offer(taskItemEntity);
+                    mongoCollection.updateOne(Filters.eq("_id",new ObjectId(JSONObject.parseObject(taskItemEntity.getId()).get("$oid").toString())), new Document("$set",new Document("status",Constants.TASK_STATUS_CROWD_RUNTIME)));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    public long getRemainingTask(String projectName){
+        MongoCollection<Document> mongoCollection = mongoTemplate.getCollection(projectName+"_task");
+        MongoCollection<Document> groundTruthCollection = mongoTemplate.getCollection(projectName+"_result");
+        long remainTask = mongoCollection.count()-groundTruthCollection.count();
+        return remainTask;
+    }
+
+    public long getTrainingIdList(String projectName){
+        MongoCollection<Document> mongoCollection = mongoTemplate.getCollection(projectName+"_task");
+        MongoCollection<Document> groundTruthCollection = mongoTemplate.getCollection(projectName+"_result");
+        long remainTask = mongoCollection.count()-groundTruthCollection.count();
+        return remainTask;
+    }
+
+
+    public long addToTrainingSet(String projectName,List<String> taskItemEntityIdList) throws Exception {
+        if(taskItemEntityIdList==null){
+            throw new Exception("taskItemIdList is null");
+        }
+        System.out.println("taskItemIdList");
+        System.out.println(taskItemEntityIdList);
+        MongoCollection<Document> mongoCollection = mongoTemplate.getCollection(projectName+"_task");
+        BasicDBObject query = new BasicDBObject();
+        ConcurrentHashMap<String,ConcurrentLinkedQueue<TaskItemEntity>> projectMap = taskQueueMap.get(projectName);
+
+        List<Document> groundTruthItems = new ArrayList<>();
+        taskItemEntityIdList.forEach(taskId->{
+            try (MongoCursor<Document> cursor = mongoCollection.find(Filters.eq("_id",
+                    new ObjectId(taskId))).iterator()) {
+                if (cursor.hasNext()) {
+                    Document origin = cursor.next();
+                    String str = origin.toJson();
+                    TaskItemEntity taskItemEntity = JSONObject.parseObject(str, TaskItemEntity.class);
+
+                    TrainingItem trainingItem = new TrainingItem();
+                    trainingItem.setDataSetName(taskItemEntity.getDataSetName());
+                    trainingItem.setImageId(taskItemEntity.getImageId());
+                    //trainingItem.setLastUpdatedTime(new Date());
+                    trainingItem.setType(Constants.TRAINING_ITEM_CROWD);
+
+                    List<Annotation> annotationList = taskItemEntity.getAnnotations().get(taskItemEntity.getLastUpdateTime());
+                    List<Tag> tagList = new ArrayList<>();
+                    annotationList.forEach(annotation ->{
+                        Tag tag = new Tag();
+                        tag.setBox(annotation.getBox());
+                        tag.setClassification(annotation.getClassification());
+                        tag.setProperty(annotation.getProperty());
+                        tagList.add(tag);
+                    });
+                    trainingItem.setTagList(tagList);
+                    groundTruthItems.add(MongoUtil.toDocument(trainingItem));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        MongoCollection<Document> groundTruthCollection = mongoTemplate.getCollection(projectName+"_result");
+        groundTruthCollection.insertMany(groundTruthItems);
+
+        long remainTask = mongoCollection.count()-groundTruthCollection.count();
+        return remainTask;
+    }
+
+    @Autowired
+    ProjectRepository projectRepository;
+    public void completeProject(String projectName){
+        ProjectEntity projectEntity = projectRepository.findProjectEntityByName(projectName);
+        projectEntity.setStatus(Constants.PROJECT_STATUS_COMPLETE);
+        projectEntity.setEndTime(new Date());
+        taskQueueStatus.remove(projectName);
+        recentCompleteTaskMap.remove(projectName);
+    }
+
+    @Override
+    public void submitCrowdTaskComplete(String projectName, CrowdAnnotationTask crowdAnnotationTask) {
+        MongoCollection<Document> mongoCollection = mongoTemplate.getCollection(projectName+"_task");
+        BasicDBObject query = new BasicDBObject();
+        try (MongoCursor<Document> cursor = mongoCollection.find(Filters.eq("_id",
+                new ObjectId(JSONObject.parseObject(crowdAnnotationTask.getId()).get("$oid").toString()))).iterator()) {
+            if (cursor.hasNext()) {
+                Document origin = cursor.next();
+                String str = origin.toJson();
+
+                TaskItemEntity taskItemEntity = JSONObject.parseObject(str, TaskItemEntity.class);
+                String timeStamp =  Long.toString(new Date().getTime());
+                taskItemEntity.setLastUpdateTime(timeStamp);
+                if(taskItemEntity.getUpdateTime()==null){
+                    taskItemEntity.setUpdateTime(new ArrayList<>());
+                }
+                taskItemEntity.getUpdateTime().add(timeStamp);
+                taskItemEntity.setIterations(taskItemEntity.getIterations()+1);
+
+                if(taskItemEntity.getWorkerList()==null){
+                    taskItemEntity.setWorkerList(new ArrayList<>());
+                }
+                taskItemEntity.getWorkerList().add(BaseContextHandler.getUserID());
+
+                taskItemEntity.setStatus(Constants.TASK_STATUS_COMPLETED);
+
+                if(taskItemEntity.getAnnotations()==null){
+                    taskItemEntity.setAnnotations(new HashMap<>());
+                }
+                if(crowdAnnotationTask.getItems()==null){
+                    crowdAnnotationTask.setItems(new ArrayList<>());
+                }
+                crowdAnnotationTask.getItems().forEach(item->{
+                    item.setWorkerId(BaseContextHandler.getUserID());
+                });
+
+                if(taskItemEntity.getChange()==null){
+                    taskItemEntity.setChange(new ArrayList<>());
+                }
+                taskItemEntity.getChange().add(false);
+                crowdAnnotationTask.getItems().forEach(annotation -> {
+                    if(annotation.getStatus().equals("editAnnotation")||annotation.getStatus().equals("newAnnotation")){
+                        taskItemEntity.getChange().set(taskItemEntity.getChange().size()-1,true);
+                    }
+                });
+
+                taskItemEntity.getAnnotations().put(timeStamp,crowdAnnotationTask.getItems());
+                if(taskItemEntity.getCreateTime()==null){
+                    taskItemEntity.setCreateTime(new ArrayList<>());
+                }
+                taskItemEntity.getCreateTime().add(crowdAnnotationTask.getCreateTime());
+
+                taskItemEntity.setId(null);
+                mongoCollection.replaceOne(Filters.eq("_id",
+                        new ObjectId(JSONObject.parseObject(crowdAnnotationTask.getId()).get("$oid").toString())),toDocument(taskItemEntity));
+
+                //加入最近的队列
+                taskItemEntity.setId(JSONObject.parseObject(crowdAnnotationTask.getId()).get("$oid").toString());
+                recentCompleteTaskMap.get(projectName).offer(taskItemEntity);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public CrowdAnnotationTask findLastAnnotationListNew(String projectName, String classId){
+        if(taskQueueMap.get(projectName)==null){
+            taskQueueMap.put(projectName,new ConcurrentHashMap<>());
+        }
+        ConcurrentHashMap<String,ConcurrentLinkedQueue<TaskItemEntity>> projectMap = taskQueueMap.get(projectName);
+        ConcurrentLinkedQueue<TaskItemEntity> taskItemEntities = null;
+        TaskItemEntity taskItemEntity = null;
+        boolean find = false;
+        if(classId.equals("0")){
+            String[] keys = projectMap.keySet().toArray(new String[0]);
+            Random random = new Random(new Date().getTime());
+            int startPos = random.nextInt(keys.length);
+            int classIter = 0;
+            while(classIter<keys.length&&startPos<=keys.length){
+                classIter++;
+                if(startPos==keys.length){
+                    startPos=0;
+                }
+                String randomKey = keys[startPos];
+                taskItemEntities = projectMap.get(randomKey);
+                Iterator<TaskItemEntity> taskItemEntityIterator = taskItemEntities.iterator();
+                TaskItemEntity temp = null;
+                while(taskItemEntityIterator.hasNext()){
+                    temp = taskItemEntityIterator.next();
+                    int count = 0;
+                    for(String workerId: temp.getWorkerList()){
+                        if(workerId.equals(BaseContextHandler.getUserID())){
+                            count++;
+                        }
+                    }
+                    if(count>=temp.getMaxWorkerPerTask()){
+                        continue;
+                    }else{
+                        find = true;
+                        taskItemEntityIterator.remove();
+                        taskItemEntity = temp;
+                        break;
+                    }
+                }
+                if(find){
+                    break;
+                }else{
+                    startPos++;
+                    continue;
+                }
+            }
+        }else{
+            taskItemEntities = projectMap.get(classId);
+            if(taskItemEntities==null){
+                return new CrowdAnnotationTask();
+            }
+            Iterator<TaskItemEntity> taskItemEntityIterator = taskItemEntities.iterator();
+            TaskItemEntity temp = null;
+            while(taskItemEntityIterator.hasNext()){
+                temp = taskItemEntityIterator.next();
+                int count = 0;
+                for(String workerId: temp.getWorkerList()){
+                    if(workerId.equals(BaseContextHandler.getUserID())){
+                        count++;
+                    }
+                }
+                if(count>=temp.getMaxWorkerPerTask()){
+                    continue;
+                }else{
+                    find = true;
+                    taskItemEntityIterator.remove();
+                    taskItemEntity = temp;
+                    break;
+                }
+            }
+        }
+        CrowdAnnotationTask crowdAnnotationTask = new CrowdAnnotationTask();
+        if(find&&taskItemEntity!=null){
+            crowdAnnotationTask.setId(taskItemEntity.getId());
+            crowdAnnotationTask.setDetImg(getImage(taskItemEntity.getDataSetName(),taskItemEntity.getImageId()));
+            crowdAnnotationTask.setClassId(taskItemEntity.getClassId());
+            crowdAnnotationTask.setCreateTime(Long.toString(new Date().getTime()));
+            if(taskItemEntity.getAnnotations()!=null){
+                crowdAnnotationTask.setItems(taskItemEntity.getAnnotations().get(taskItemEntity.getLastUpdateTime()));
+            }
+        }
+        return crowdAnnotationTask;
     }
 }

@@ -20,4 +20,6 @@ public class Annotation {
     private JSONObject property;
     private Date lastUpdatedTime;
     private String lastAnnotationId;
+
+    private int fold;
 }

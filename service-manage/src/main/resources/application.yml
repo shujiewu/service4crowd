@@ -1,13 +1,18 @@
 RABBIT_MQ_HOST: 10.1.1.63
-RABBIT_MQ_PORT: 5673
-EUREKA_HOST: 10.1.1.62
+RABBIT_MQ_PORT: 5672
+EUREKA_HOST: 10.1.1.63
+MYSQL_HOST: 10.1.1.63
+REDIS_HOST: 10.1.1.63
+MONGO_HOST: 10.1.1.63
+APP_HOST: 10.1.1.62
 eureka:
-#    instance:
-#        statusPageUrlPath: /info
-#        healthCheckUrlPath: /health
-#        # docker 部署开启
-#        prefer-ip-address: true
-#        ip-address: 127.0.0.1
+    instance:
+        statusPageUrlPath: /info
+        healthCheckUrlPath: /health
+        # docker 部署开启
+        prefer-ip-address: true
+        # ip-address: 10.1.1.63
+        instance-id: ${spring.cloud.client.ip-address}:${server.port}
     client:
         serviceUrl:
             defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
@@ -41,33 +46,11 @@ spring:
         testOnReturn: false
         poolPreparedStatements: true
         maxOpenPreparedStatements: 20
-#        name: auth
-#        type: com.alibaba.druid.pool.DruidDataSource
-#        filters: stat
-#        driver-class-name: com.mysql.jdbc.Driver
-#        url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/service4crowd?useUnicode=true&characterEncoding=UTF8
-#        username: root
-#        password: 1706223
-#        initialSize: 1
-#        minIdle: 1
-#        maxActive: 20
-#        maxWait: 60000
-#        #间隔多久进行一次检测，检测需要关闭的空闲连接
-#        timeBetweenEvictionRunsMillis: 60000
-#        #一个连接在池中最小生存的时间
-#        minEvictableIdleTimeMillis: 300000
-#        validationQuery: select 'x'
-#        testWhileIdle: true
-#        testOnBorrow: false
-#        testOnReturn: false
-#        #打开PSCache，并指定每个连接上PSCache的大小。oracle设为true，mysql设为false。分库分表较多推荐设置为false
-#        poolPreparedStatements: true
-#        maxOpenPreparedStatements: 20
-#        # druid:
     jpa:
       show-sql: true
       hibernate:
         ddl-auto: update
+      database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
     data:
       web:
         pageable:
@@ -79,7 +62,7 @@ spring:
      ## 字段排序参数名 默认为 sort
           # sort-parameter: orderBy 不起作用
       mongodb:
-         uri: mongodb://crowd:1706223@localhost:27017/CrowdData
+         uri: mongodb://crowd:1706223@${MONGO_HOST:localhost}:27017/CrowdData
     servlet:
       multipart:
         max-file-size: 2048MB
@@ -89,19 +72,6 @@ spring:
         port:  ${RABBIT_MQ_PORT:5672}
         username: guest
         password: guest
-#  zipkin:
-#    #内存方式配置，不需要
-#    #base-url: http://localhost:9411
-#    #日志发送队列类型
-#    sender:
-#      type: rabbit
-#    #发送的队列名称，默认zipkin，正常情况不要修改因为zipkin-server默认监控队列也是zipkin
-#    rabbitmq:
-#      queue: zipkin
-    sleuth:
-  #统计收集百分比默认0.1，正式环境可不配置
-      sampler:
-        percentage: 1.0
 # 必须配置
 feign:
   httpclient:
@@ -135,17 +105,19 @@ swagger:
     base-package: cn.edu.buaa.act.auth.center
     title: auth-center
     version: 1.0.0.SNAPSHOT
-    description: 認證服务
+    description: 认证服务
     contact:
         name: admin
 
 auth:
-  serviceId: auth-center
+  serviceId: service-manage
   user:
     token-header: Authorization
+  client:
+    token-header: client-token
+    id: service-manage
+    secret: qTDrnSaD
+storage:
+  dest: /home/LAB/wusj/service4crowd/service
 
-jwt:
-  token-header: Authorization
-  expire: 14400
-  rsa-secret: xx1WET12^%3^(WE45
 

@@ -10,6 +10,12 @@ public class Constants {
     public static final String MODEL_TRAINING_REQUEST = "MODEL_TRAINING_REQUEST";
     public static final String MODEL_TRAINING_RESPONSE= "MODEL_TRAINING_RESPONSE";
 
+    public static final String SLURM_TRAINING_REQUEST = "SLURM_TRAINING_REQUEST";
+    public static final String SLURM_TRAINING_RESPONSE= "SLURM_TRAINING_RESPONSE";
+
+    public static final String SLURM_SELECT_REQUEST = "SLURM_SELECT_REQUEST";
+    public static final String SLURM_SELECT_RESPONSE= "SLURM_SELECT_RESPONSE";
+
     public static final String MACHINE_ANNOTATION_REQUEST = "MACHINE_ANNOTATION_REQUEST";
     public static final String MACHINE_ANNOTATION_RESPONSE = "MACHINE_ANNOTATION_RESPONSE";
 

@@ -42,7 +42,7 @@ public class GetThread extends Thread {
     @Override
     public void run() {
         String token = doLogin(httpClient,userName,password);
-        String projectName = "test7_5";
+        String projectName = "test9_5";
         Set<String> classIds = new HashSet<>();
         for(int i = 1;i<=20;i++){
             classIds.add(String.valueOf(i));

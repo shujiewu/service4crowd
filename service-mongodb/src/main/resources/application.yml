@@ -1,9 +1,0 @@
-server:
-    port: 8501
-spring:
-    application:
-        name: service-mongo
-    data:
-      rest:
-        base-path: /api
-

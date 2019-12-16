@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @Data
 public class FTPConfig {
-    @Value("${ftp.host:192.168.3.188}")
+    @Value("${ftp.host:192.168.3.117}")
     private String host;
     @Value("${ftp.port:21}")
     private int port;

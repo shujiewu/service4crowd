@@ -10,15 +10,15 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 
-
+@Configuration
 public class FeignConfiguration implements RequestInterceptor {
 
     @Autowired
     private UserAuthConfig userAuthConfig;
     @Override
     public void apply(RequestTemplate requestTemplate) {
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        HttpServletRequest request = attributes.getRequest();
-        requestTemplate.header(userAuthConfig.getTokenHeader(),request.getHeader(userAuthConfig.getTokenHeader()));
+//        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+//        HttpServletRequest request = attributes.getRequest();
+//        requestTemplate.header(userAuthConfig.getTokenHeader(),request.getHeader(userAuthConfig.getTokenHeader()));
     }
 }

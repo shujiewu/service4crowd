@@ -1,5 +1,6 @@
 package cn.edu.buaa.act.mlflow.controller;
 
+import cn.edu.buaa.act.common.context.BaseContextHandler;
 import cn.edu.buaa.act.common.msg.TableResultResponse;
 import cn.edu.buaa.act.mlflow.config.Properties;
 import cn.edu.buaa.act.mlflow.domain.ExperimentEntity;
@@ -57,7 +58,6 @@ public class AlgorithmController {
         return new ResponseEntity<Map>(test, HttpStatus.CREATED);
     }
 
-
     @Autowired
     private ExperimentService experimentService;
 
@@ -68,7 +68,7 @@ public class AlgorithmController {
     private ExecuteService executeService;
 
     public void createRun(String processInstanceId,String taskId, String serviceName, String version,Map<String,Object> serviceProperties){
-        String userId= "1";
+        String userId= BaseContextHandler.getUserID();
         String experimentName = userId+SEPARATOR+processInstanceId;
         ExperimentEntity experimentEntity = experimentService.findByExperimentName(experimentName);
         if(experimentEntity==null){
@@ -117,8 +117,6 @@ public class AlgorithmController {
     }
     // public String writeCSV()
 
-
-
     //对于写配置文件的人来说需要写多个
     @RequestMapping(value = "/{algorithmName}/{version}", method = RequestMethod.POST)
     public ResponseEntity<Map> executeAlgorithm(@PathVariable String algorithmName, @PathVariable("version") String version,@RequestBody MultiValueMap<String,Object> body) {
@@ -126,11 +124,8 @@ public class AlgorithmController {
         Map<String, Object> result = new HashMap<>();
         logger.info(algorithmName + version);
 
-
-
         String processInstanceId = varMap.get("processInstanceId").toString();
         String taskId = varMap.get("taskId").toString();
-
 
         Map<String,String> filePathMap = new HashMap<>();
 
@@ -203,29 +198,6 @@ public class AlgorithmController {
             varMap.remove("state");
         }
 
-//        if(varMap.containsKey("state")){
-//            if(!rootPath.exists()) {
-//                rootPath.mkdirs();
-//            }
-//            Object truthData= varMap.get("state");
-//            try {
-//
-//                File file = new File(rootPath.getAbsolutePath()+"/state.txt");
-//                // if file doesnt exists, then create it
-//                if (!file.exists()) {
-//                    file.createNewFile();
-//                }
-//                FileWriter fw = new FileWriter(file.getAbsoluteFile());
-//                BufferedWriter bw = new BufferedWriter(fw);
-//                bw.write(JSON.toJSONString(truthData));
-//                bw.close();
-//                filePathMap.put("state",file.getAbsolutePath());
-//                varMap.remove("state");
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-
         // varMap.remove("taskId");
         varMap.remove("serviceName");
         varMap.remove("processInstanceId");
@@ -241,11 +213,6 @@ public class AlgorithmController {
         result.put("algorithmName", algorithmName);
         return new ResponseEntity<Map>(result, HttpStatus.CREATED);
     }
-
-
-
-
-
 
 //    //对于写配置文件的人来说需要写多个
 //    @RequestMapping(value = "/{algorithmName}/{version}/1", method = RequestMethod.POST)

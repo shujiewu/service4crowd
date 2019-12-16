@@ -1,0 +1,54 @@
+RABBIT_MQ_HOST: 10.1.1.63
+RABBIT_MQ_PORT: 5672
+EUREKA_HOST: 10.1.1.63
+MYSQL_HOST: 10.1.1.63
+REDIS_HOST: 10.1.1.63
+MONGO_HOST: 10.1.1.63
+eureka:
+    client:
+        serviceUrl:
+            defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+server:
+    port: 8505
+spring:
+    application:
+        name: service-agent
+    jackson:
+        date-format: yyyy-MM-dd HH:mm:ss
+        time-zone: GMT+8
+        default-property-inclusion: non_null
+    servlet:
+      multipart:
+        max-file-size: 2048MB
+        max-request-size: 2048MB
+ribbon:
+  eureka:
+    enabled: true
+  ReadTimeout: 120000
+  ConnectTimeout: 120000
+  MaxAutoRetries: 0
+  MaxAutoRetriesNextServer: 1
+  OkToRetryOnAllOperations: false
+hystrix:
+  threadpool:
+    default:
+      coreSize: 1000 ##并发执行的最大线程数，默认10
+      maxQueueSize: 1000 ##BlockingQueue的最大队列数
+      queueSizeRejectionThreshold: 500 ##即使maxQueueSize没有达到，达到queueSizeRejectionThreshold该值后，请求也会被拒绝
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 110000
+auth:
+  serviceId: service-auth
+  user:
+    token-header: Authorization
+  client:
+    token-header: client-token
+    id: service-agent
+    secret: qTDrnSaD
+
+
+

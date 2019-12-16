@@ -24,4 +24,6 @@ public interface IProjectService {
     Page<TaskItemEntity> findTasks(String projectName, Pageable pageable);
     List<String> findImages(String projectName,String dataSetName);
     boolean publishProject(String projectName, String dataSetName, PublishRequest publishRequest);
+
+    ProjectEntity insertProcessProject(String taskId, ProjectEntity projectEntity);
 }

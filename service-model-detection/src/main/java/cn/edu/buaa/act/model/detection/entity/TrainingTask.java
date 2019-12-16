@@ -26,4 +26,6 @@ public class TrainingTask {
     private List<TrainingItem> trainingItemList;
 
     private JSONObject trainingConfig;
+
+    private String processInstanceId;
 }

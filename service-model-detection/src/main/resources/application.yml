@@ -26,6 +26,7 @@ spring:
       max-request-size: 2048MB
 
 auth:
+  serviceId: service-model-detection
   user:
     token-header: Authorization
   client:

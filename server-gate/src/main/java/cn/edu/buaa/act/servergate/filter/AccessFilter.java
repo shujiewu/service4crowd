@@ -100,7 +100,7 @@ public class AccessFilter extends ZuulFilter {
             setFailedRequest(JSON.toJSONString(new TokenErrorResponse(e.getMessage())), 200);
             return null;
         }
-        System.out.println(BaseContextHandler.getToken());
+        /// System.out.println(BaseContextHandler.getToken());
         if(user!=null){
             ctx.addZuulRequestHeader(userAuthConfig.getTokenHeader(), BaseContextHandler.getToken());
             ctx.addZuulRequestHeader("userId", user.getId());
@@ -115,7 +115,7 @@ public class AccessFilter extends ZuulFilter {
         if (StringUtils.isBlank(authToken)) {
             authToken = request.getParameter("token");
         }
-        System.out.println("1111"+authToken);
+        /// System.out.println("1111"+authToken);
         BaseContextHandler.setToken(authToken);
         return userAuthUtil.getInfoFromToken(authToken);
     }

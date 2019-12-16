@@ -42,12 +42,11 @@ public class CustomUserTaskJsonConverter extends UserTaskJsonConverter {
         String serviceName = this.getPropertyValueAsString("servicename",elementNode);
         JsonNode servicePara = this.getProperty("servicepara",elementNode);
         JsonNode serviceOutput = this.getProperty("serviceoutput",elementNode);
+        System.out.println(servicePara.toString());
         ServiceParameters serviceParameters = JSONObject.parseObject(servicePara.toString(),ServiceParameters.class);
         ServiceOutputs serviceOutputs = JSONObject.parseObject(serviceOutput.toString(),ServiceOutputs.class);
         serviceParameters.setMicroServiceName(serviceName);
         serviceOutputs.setMicroServiceName(serviceName);
-        System.out.println(serviceName+11);
-        System.out.println(atomicName+12);
 
         JSONObject jsonProcessProperty = JSONObject.parseObject(modelNode.toString());
         String processId = jsonProcessProperty.getJSONObject("properties").get("process_id").toString();

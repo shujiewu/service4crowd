@@ -5,7 +5,6 @@ import cn.edu.buaa.act.common.msg.ObjectRestResponse;
 import cn.edu.buaa.act.common.msg.TableResultResponse;
 import cn.edu.buaa.act.mlflow.config.Properties;
 import cn.edu.buaa.act.mlflow.domain.ExperimentEntity;
-import cn.edu.buaa.act.mlflow.domain.ExperimentInfo;
 import cn.edu.buaa.act.mlflow.domain.RunInfoEntity;
 import cn.edu.buaa.act.mlflow.exception.NoExperimentException;
 import cn.edu.buaa.act.mlflow.repository.RunInfoRepository;
@@ -252,14 +251,12 @@ public class MlFlowController {
     @RequestMapping(method = RequestMethod.GET, path = "/runs/{runUuid}",produces = "application/json")
     public Run getRun(@PathVariable String runUuid) {
         Run runInfo = mlflowClient.getRun(runUuid);
-        System.out.println(runInfo);
         return runInfo;
     }
 
     @RequestMapping(method = RequestMethod.GET, path = "/runs/{runUuid}/artifacts",produces = "application/json")
     public  ObjectRestResponse<Object> getArtifacts(@PathVariable String runUuid) {
         File runInfo = mlflowClient.downloadArtifacts(runUuid);
-        System.out.println(runInfo);
         return new ObjectRestResponse<>();
     }
 

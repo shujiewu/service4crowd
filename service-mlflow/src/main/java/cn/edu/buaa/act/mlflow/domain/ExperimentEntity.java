@@ -24,7 +24,7 @@ public class ExperimentEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    private Long experimentId;
+    private String experimentId;
     private String name;
     private String artifactLocation;
     private String lifecycleStage;

@@ -7,8 +7,11 @@ import cn.edu.buaa.act.common.msg.ObjectRestResponse;
 import cn.edu.buaa.act.common.msg.TableResultResponse;
 import cn.edu.buaa.act.data.common.DataPageable;
 import cn.edu.buaa.act.data.entity.CustomDataEntity;
+import cn.edu.buaa.act.data.entity.CustomFile;
+import cn.edu.buaa.act.data.entity.ServiceResultEntity;
 import cn.edu.buaa.act.data.model.CustomFileRepresentation;
 import cn.edu.buaa.act.data.repository.CustomDataRepository;
+import cn.edu.buaa.act.data.service.IServiceResult;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.client.gridfs.GridFSBucket;
@@ -36,6 +39,7 @@ import javax.servlet.http.Part;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * CustomFileController
@@ -97,7 +101,7 @@ public class CustomFileController {
     @IgnoreUserToken
     public void handleFileDownloadById(@PathVariable String id, HttpServletRequest request, HttpServletResponse response) {
         final GridFSFile file = gridFsTemplate.findOne(new Query().addCriteria(Criteria.where("_id").is(id)));
-        System.out.println(file.getId().toString());
+        // System.out.println(file.getId().toString());
         if (file != null) {
             try {
                 String fileName = file.getFilename().replace(",", "");
@@ -121,6 +125,53 @@ public class CustomFileController {
 
             }
         }
+    }
+
+    @Autowired
+    IServiceResult serviceResult;
+
+    @RequestMapping(value = "/customData/{dataSetName}", method = RequestMethod.GET, produces = "application/json")
+    public ResponseEntity<Object> dataSetFiles(@PathVariable String dataSetName) {
+        Map map = new HashMap<>();
+        List<CustomDataEntity> customDataEntities = customDataRepository.findCustomDataEntitiesByNameAndUserId(dataSetName,BaseContextHandler.getUserID());
+        if (customDataEntities != null && customDataEntities.size()>0) {
+            CustomDataEntity customDataEntity = customDataEntities.get(0);
+            List<CustomFile> customFiles = customDataEntity.getCustomFiles();
+            map.put("success", true);
+            map.put("CustomFiles", customFiles);
+        } else {
+            map.put("success", false);
+            map.put("message","DataSet Not Found");
+        }
+        map.put("ServiceName","service-data-core");
+        map.put("AtomicServiceName","loadDataSet");
+        ServiceResultEntity serviceResultEntity = serviceResult.insertServiceResult("loadDataSet", map);
+        map.put("serviceResultId", serviceResultEntity.getId());
+        return new ResponseEntity<Object>(map, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/customData/{dataSetName}/{fileName}", method = RequestMethod.GET, produces = "application/json")
+    public ResponseEntity<Object> dataSetFile(@PathVariable String dataSetName,@PathVariable String fileName) {
+        Map map = new HashMap<>();
+        List<CustomDataEntity> customDataEntities = customDataRepository.findCustomDataEntitiesByNameAndUserId(dataSetName,BaseContextHandler.getUserID());
+        if (customDataEntities != null && customDataEntities.size()>0) {
+            CustomDataEntity customDataEntity = customDataEntities.get(0);
+            List<CustomFile> customFiles = customDataEntity.getCustomFiles();
+            customFiles.forEach(customFile -> {
+                if(customFile.getFileName().equals(fileName)){
+                    map.put("success", true);
+                    map.put("CustomFile", customFile);
+                }
+            });
+        } else {
+            map.put("success", false);
+            map.put("message","DataFile Not Found");
+        }
+        map.put("ServiceName","service-data-core");
+        map.put("AtomicServiceName","loadDataFile");
+        ServiceResultEntity serviceResultEntity = serviceResult.insertServiceResult("loadDataFile", map);
+        map.put("serviceResultId", serviceResultEntity.getId());
+        return new ResponseEntity<Object>(map, HttpStatus.OK);
     }
 
     /**
@@ -159,20 +210,28 @@ public class CustomFileController {
         List<CustomDataEntity> customDataEntity = customDataRepository.findCustomDataEntitiesByNameAndUserId(name,BaseContextHandler.getUserID());
         if(customDataEntity!=null&&customDataEntity.size()>0){
             result.put("exist",true);
+            log.info("数据集名称已存在");
         }
         else {
             result.put("exist",false);
+            log.info("数据集名称可用");
         }
         return new ResponseEntity<Map>(result, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/customData/create", method = RequestMethod.POST)
-    public ObjectRestResponse<CustomDataEntity> createCustomData(@RequestParam("name") String name,@RequestBody List<String> id){
+    public ObjectRestResponse<CustomDataEntity> createCustomData(@RequestParam("name") String name,@RequestBody List<CustomFile> files){
         CustomDataEntity customDataEntity = new CustomDataEntity();
         customDataEntity.setUserId(BaseContextHandler.getUserID());
         customDataEntity.setCreateTime(new Date());
-        customDataEntity.setFileId(new ArrayList<>(id));
+        customDataEntity.setCustomFiles(files);
+        List<String> fileIds = new ArrayList<>();
+        files.forEach(customFile -> {
+            fileIds.add(customFile.getFileId());
+        });
+        customDataEntity.setFileId(new ArrayList<>(fileIds));
         customDataEntity.setName(name);
+        log.info("Create CustomData");
         customDataRepository.save(customDataEntity);
         return new ObjectRestResponse<>().data(customDataEntity).status(HttpStatus.OK.value());
     }
@@ -185,7 +244,7 @@ public class CustomFileController {
         dataPageable.setSort(new Sort(orders));
         dataPageable.setPagesize(limit);
         dataPageable.setPagenumber(page);
-        Page<CustomDataEntity> result =customDataRepository.findCustomDataEntitiesByUserId("1",dataPageable);
+        Page<CustomDataEntity> result =customDataRepository.findCustomDataEntitiesByUserId(BaseContextHandler.getUserID(),dataPageable);
         return new TableResultResponse<CustomDataEntity>(result.getTotalElements(),result.getContent());
     }
 
@@ -211,9 +270,9 @@ public class CustomFileController {
     }
 
 
-    @RequestMapping(value = "/customData/upload", method = RequestMethod.POST)
-    public String uploadfile(HttpServletRequest request) {
-        String result = "error";
+    @RequestMapping(value = "/customData/upload", method = RequestMethod.POST, produces = "application/json")
+    public ResponseEntity<Map> uploadfile(HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
         try {
             /**
              * Servlet3.0新增了request.getParts()/getPart(String filename) api，
@@ -228,19 +287,22 @@ public class CustomFileController {
             // 获得文件类型
             String contenttype = part.getContentType();
             DBObject metaData = new BasicDBObject();
-            metaData.put("user", "1");
+            metaData.put("user", BaseContextHandler.getUserID());
             metaData.put("type", part.getContentType());
             metaData.put("fileOriginalName",filename);
             // metaData.put("customDataName",name);
             // System.out.println(name);
             // 将文件存储到mongodb中,mongodb 将会返回这个文件的具体信息
             ObjectId gfs = gridFsTemplate.store(ins, filename, contenttype,metaData);
-            result = gfs.toString();
+            result.put("fileName",filename);
+            result.put("success",true);
+            result.put("fileId",gfs.toString());
         } catch (IOException e) {
             log.error("上传失败发生了io异常");
+            result.put("success",false);
         } catch (ServletException e1) {
             e1.printStackTrace();
         }
-        return result;
+        return new ResponseEntity<Map>(result, HttpStatus.OK);
     }
 }

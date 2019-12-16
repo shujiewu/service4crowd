@@ -25,9 +25,6 @@ CREATE TABLE user (
   PRIMARY KEY (id)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4;
 
--- BEGIN;
--- INSERT INTO `base_user` VALUES ('1', 'admin', '$2a$12$S/yLlj9kzi5Dgsz97H4rAekxrPlk/10eXp1lUJcAVAx.2M9tOpWie', 'MR.WU', '', null, '', null, '', '男', null, null, '', null, null, null, null, '2017-11-16 23:23:49', '1', 'Mr.AG', '127.0.0.1', null, null, null, null, null, null, null, null), ('2', 'test', '$2a$12$zWe6knO6rGp15UVfdWTTxu.Ykt.k3QnD5FPoj6a1cnL63csHY2A1S', '测试账户', '', null, '', null, '', '男', null, null, '', null, null, null, null, '2017-07-15 19:18:07', '1', '管理员', '0:0:0:0:0:0:0:1', null, null, null, null, null, null, null, null), ('4', 'blog', '$2a$12$S/yLlj9kzi5Dgsz97H4rAekxrPlk/10eXp1lUJcAVAx.2M9tOpWie', 'Mr.AG(博主)', '', null, '', null, '', '女', null, null, '12', null, null, null, null, '2018-03-07 11:21:10', '1', 'Mr.AG', '127.0.0.1', null, null, null, null, null, null, null, null);
--- COMMIT;
 DROP TABLE IF EXISTS client;
 CREATE TABLE client (
   id int(11) NOT NULL AUTO_INCREMENT,

@@ -1,5 +1,6 @@
 package cn.edu.buaa.act.mlflow.service.impl;
 
+import cn.edu.buaa.act.common.context.BaseContextHandler;
 import cn.edu.buaa.act.common.msg.ObjectRestResponse;
 import cn.edu.buaa.act.mlflow.domain.ExperimentEntity;
 import cn.edu.buaa.act.mlflow.exception.ExperimentAlreadyExistedException;
@@ -51,7 +52,7 @@ public class ExperimentServiceImpl implements ExperimentService {
     public List<ExperimentEntity> findAll() {
         List<Experiment> experimentList = mlflowClient.listExperiments();
         List<ExperimentEntity> experimentEntityList = experimentRepository.findAll();
-        Map<Long, Experiment> experimentMap = experimentList.stream().collect(Collectors.toMap(Experiment::getExperimentId,a -> a));
+        Map<String, Experiment> experimentMap = experimentList.stream().collect(Collectors.toMap(Experiment::getExperimentId,a -> a));
         System.out.println(experimentMap);
         experimentEntityList = experimentEntityList.stream().map(experimentEntity -> {
             Experiment experiment = experimentMap.get(experimentEntity.getExperimentId());
@@ -126,15 +127,15 @@ public class ExperimentServiceImpl implements ExperimentService {
             logger.info(experimentName+"already exists");
             throw new ExperimentAlreadyExistedException(experimentEntity);
         }
-        Long experimentId = mlflowClient.createExperiment(experimentName);
-        if(experimentId>=0){
+        String experimentId = mlflowClient.createExperiment(experimentName);
+        if(experimentId!=null){
             org.mlflow.api.proto.Service.Experiment experiment = mlflowClient.getExperiment(experimentId).getExperiment();
             experimentEntity = new ExperimentEntity();
             experimentEntity.setExperimentId(experiment.getExperimentId());
             experimentEntity.setLifecycleStage(experiment.getLifecycleStage());
             experimentEntity.setArtifactLocation(experiment.getArtifactLocation());
             experimentEntity.setName(experiment.getName());
-            experimentEntity.setUserId("1");
+            experimentEntity.setUserId(BaseContextHandler.getUserID());
             experimentEntity.setCreationTime(new Date());
             experimentEntity.setLastUpdateTime(new Date());
             experimentRepository.save(experimentEntity);

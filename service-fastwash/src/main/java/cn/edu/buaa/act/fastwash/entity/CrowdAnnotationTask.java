@@ -13,6 +13,7 @@ public class CrowdAnnotationTask {
     private String id;
     private Image detImg;
     private List<Annotation> items;
-    private Date createTime;
+    private String createTime;
+    private String endTime;
     private String classId;
 }

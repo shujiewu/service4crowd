@@ -19,5 +19,6 @@ public class CustomDataEntity {
     private Date createTime;
     private String id;
     private String userId;
+    private List<CustomFile> customFiles;
     private List<String> fileId;
 }

@@ -2,12 +2,10 @@ package cn.edu.buaa.act.data.processor.service;
 
 import cn.edu.buaa.act.common.constant.CommonConstants;
 import cn.edu.buaa.act.common.msg.PlayLoadMessage;
-import cn.edu.buaa.act.data.entity.AnswerEntity;
 import cn.edu.buaa.act.data.entity.ServiceResultEntity;
 import cn.edu.buaa.act.data.entity.UnitEntity;
 import cn.edu.buaa.act.data.processor.channel.DataProcessorNotifyChannel;
 import cn.edu.buaa.act.data.processor.common.Constraint;
-import cn.edu.buaa.act.data.processor.service.api.IServiceResult;
 import cn.edu.buaa.act.data.vo.Label;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -19,7 +17,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

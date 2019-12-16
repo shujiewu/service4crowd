@@ -1,33 +1,36 @@
-EUREKA_HOST: 10.1.1.62
-RABBITMQ_HOST: localhost
+RABBIT_MQ_HOST: 10.1.1.63
+RABBIT_MQ_PORT: 5672
+EUREKA_HOST: 10.1.1.63
+MONGO_HOST: 10.1.1.63
 spring:
   data:
     mongodb:
-      uri: mongodb://crowd:1706223@localhost:27017/CrowdData
+      uri: mongodb://crowd:1706223@${MONGO_HOST:localhost}:27017/CrowdData
   application:
     name: service-data-processor
   rabbitmq:
-    host: ${RABBITMQ_HOST}
-    username: ldkobe
-    password: 1706223
-    port: 5672
-    virtual-host: /
+    host: ${RABBIT_MQ_HOST:localhost}
+    username: guest
+    password: guest
+    port: ${RABBIT_MQ_PORT:5672}
 eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
-
+    instance:
+        statusPageUrlPath: /info
+        healthCheckUrlPath: /health
+        # docker 部署开启
+        prefer-ip-address: true
+        # ip-address: 10.1.1.63
+        instance-id: ${spring.cloud.client.ip-address}:${server.port}
+    client:
+        serviceUrl:
+            defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
 server:
   port: 8801
-
-
 auth:
-  serviceId: server-auth
+  serviceId: service-data-processor
   user:
     token-header: Authorization
   client:
     token-header: client-token
     id: service-data-processor
-#    secret: GVVzzZiJ
-
-
+    secret: tCMgFhjB

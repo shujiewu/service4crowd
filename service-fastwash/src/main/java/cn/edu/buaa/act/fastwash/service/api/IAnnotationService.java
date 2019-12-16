@@ -9,4 +9,8 @@ public interface IAnnotationService {
     CrowdAnnotationTask findLastAnnotationList(String projectName,String classId);
     CrowdAnnotationTask findLastAnnotationList(String projectName,String dataSetName,String imageId, String classId);
     void submitCrowdTask(String projectName, CrowdAnnotationTask crowdAnnotationTask);
+
+    void submitCrowdTaskComplete(String projectName, CrowdAnnotationTask crowdAnnotationTask);
+
+    CrowdAnnotationTask findLastAnnotationListNew(String projectName, String classId);
 }

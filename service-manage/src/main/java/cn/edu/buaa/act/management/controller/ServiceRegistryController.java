@@ -1,10 +1,10 @@
 package cn.edu.buaa.act.management.controller;
 
-import cn.edu.buaa.act.common.entity.Algorithm;
-import cn.edu.buaa.act.common.entity.MicroService;
+import cn.edu.buaa.act.common.context.BaseContextHandler;
 import cn.edu.buaa.act.common.msg.ObjectRestResponse;
 import cn.edu.buaa.act.common.msg.TableResultResponse;
 import cn.edu.buaa.act.management.service.AlgorithmConfig;
+import cn.edu.buaa.act.management.service.ProcessorConfig;
 import cn.edu.buaa.act.management.service.ServiceConfig;
 import cn.edu.buaa.act.management.util.FileManagerByFtp;
 import cn.edu.buaa.act.management.common.ServiceType;
@@ -12,7 +12,6 @@ import cn.edu.buaa.act.management.entity.ServiceRegistration;
 import cn.edu.buaa.act.management.model.ServiceRegisterPo;
 import cn.edu.buaa.act.management.service.ServiceRegistry;
 import cn.edu.buaa.act.management.service.impl.ExecuteService;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,20 +93,16 @@ public class ServiceRegistryController {
         return new ResponseEntity<ServiceRegistration>(HttpStatus.OK);
     }
 
-
-
-
-
-
-    @Value("${ftp.dest:/home/wsj/service4crowd/service}")
+    @Value("${storage.dest:/home/LAB/wusj/service4crowd/service}")
     private String dictionary;
+
     @RequestMapping(value = "/{type}/{name}", method = RequestMethod.POST)
-    public ObjectRestResponse<Map> register(@PathVariable("type") String type, @PathVariable("name") String name, @RequestBody ServiceRegisterPo serviceRegisterPo) {
+    public ObjectRestResponse register(@PathVariable("type") String type, @PathVariable("name") String name, @RequestBody ServiceRegisterPo serviceRegisterPo) {
         ServiceRegistration serviceRegistration = new ServiceRegistration();
         serviceRegistration.setName(name);
         serviceRegistration.setType(type);
         serviceRegistration.setVersion(serviceRegisterPo.getVersion());
-        serviceRegistration.setUserId("1");
+        serviceRegistration.setUserId(BaseContextHandler.getUserID());
         serviceRegistration.setDescription(serviceRegisterPo.getDescription());
         serviceRegistration.setPropertyId(serviceRegisterPo.getPropertyId());
         serviceRegistration.setCreateTime(new Date());
@@ -116,7 +111,7 @@ public class ServiceRegistryController {
             if (serviceRegistration.getType().equals(ServiceType.WEB)) {
                 serviceRegistration.setUri(new URI(serviceRegisterPo.getUri()));
             }
-            String localFile = dictionary+"/" + type + "/" + name + "/" + serviceRegisterPo.getVersion();
+            String localFile = dictionary+"/"+BaseContextHandler.getUserID()+"/" + type + "/" + name + "/" + serviceRegisterPo.getVersion();
             serviceRegistration.setMetaDataUri(new URI(localFile));
         } catch (URISyntaxException e) {
             e.printStackTrace();
@@ -135,7 +130,7 @@ public class ServiceRegistryController {
     public TableResultResponse<ServiceRegistration> setDefaultVersion(@PathVariable("type") String type, @PathVariable("name") String name, @PathVariable("version") String version) {
         Map<String, Object> result = new HashMap<>();
         List<ServiceRegistration> registrationList = serviceRegistry.findAllByTypeAndName(type, name);
-        registrationList = registrationList.stream().map(registration -> {
+        registrationList = registrationList.stream().peek(registration -> {
             if (registration.getDefaultVersion()) {
                 registration.setDefaultVersion(false);
             }
@@ -143,7 +138,6 @@ public class ServiceRegistryController {
                 registration.setDefaultVersion(true);
             }
             serviceRegistry.save(registration);
-            return registration;
         }).collect(Collectors.toList());
         return new TableResultResponse<>(registrationList.size(), registrationList);
     }
@@ -154,15 +148,19 @@ public class ServiceRegistryController {
     @Autowired
     AlgorithmConfig algorithmConfig;
 
+    @Autowired
+    ProcessorConfig processorConfig;
+
     @RequestMapping(value = "/upload/{type}/{serviceName}/{version}", method = RequestMethod.POST)
-    public ObjectRestResponse<Map> upload(@PathVariable String type, @PathVariable String serviceName, @PathVariable String version, @RequestParam(value = "force") Boolean force, @RequestParam("file") MultipartFile file) {
+    public ObjectRestResponse upload(@PathVariable String type, @PathVariable String serviceName, @PathVariable String version, @RequestParam(value = "force") Boolean force, @RequestParam("file") MultipartFile file) {
         Map map = new HashMap();
         map.put("success", false);
+        String userID = BaseContextHandler.getUserID();
         if (file != null) {
             String packageName = file.getOriginalFilename();
             //是zip压缩文件
-            if ("WEB".equals(type) && packageName.matches(".*\\.json")) {
-                String dir = "/" + type + "/" + serviceName + "/" + version + "/";
+            if ("WEB".equals(type) && (packageName != null && packageName.matches(".*\\.json"))) {
+                String dir = "/"+userID+ "/" + type + "/" + serviceName + "/" + version + "/";
                 try {
                     InputStream inputStream = file.getInputStream();
                     InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
@@ -173,11 +171,6 @@ public class ServiceRegistryController {
                         lineTxt.append(line);
                     }
                     String propertyId = serviceConfig.save(lineTxt.toString(),"1");
-                    //Map result = executeService.executeUploadMetaData(dir,packageName,inputStream,force,false);
-//                    if((Boolean)result.get("success")){
-//                        map.put("filePath", dir);
-//                        map.put("success",true);
-//                    }
                     map.put("propertyId",propertyId);
                     map.put("filePath", dir);
                     map.put("success",true);
@@ -189,14 +182,17 @@ public class ServiceRegistryController {
                 }
                 return new ObjectRestResponse<>().data(map);
             }
-            if("ALGORITHM".equals(type)&&packageName.matches(".*\\.zip")){
-                String dir = "/" + type + "/" + serviceName + "/" + version + "/";
+            if("ALGORITHM".equals(type)&& (packageName != null && packageName.matches(".*\\.zip"))){
+                String dir = "/"+userID+ "/" + type + "/" + serviceName + "/" + version + "/";
                 try {
                     InputStream inputStream = file.getInputStream();
                     Map result = executeService.executeUploadMetaData(dir,packageName,inputStream,force,true);
                     String config;
                     if((config = (String) result.get("configuration"))!=null){
-                        String propertyId = algorithmConfig.save(config,"1");
+                        JSONObject jsonConfig = JSONObject.parseObject(config);
+                        jsonConfig.put("name",serviceName);
+                        jsonConfig.put("version",version);
+                        String propertyId = algorithmConfig.save(jsonConfig.toString(),"1");
                         if(propertyId!=null){
                             map.put("propertyId",propertyId);
                         }
@@ -205,25 +201,31 @@ public class ServiceRegistryController {
                         map.put("filePath", dir);
                         map.put("success",true);
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
+                } catch (InterruptedException | IOException e) {
                     e.printStackTrace();
                 }
                 return new ObjectRestResponse<>().data(map);
             }
-            if("PROCESSOR".equals(type)&&packageName.matches(".*\\.zip")){
-                String dir = "/" + type + "/" + serviceName + "/" + version + "/";
+            if("PROCESSOR".equals(type)&& (packageName != null && packageName.matches(".*\\.zip"))){
+                String dir = "/"+userID+ "/" + type + "/" + serviceName + "/" + version + "/";
                 try {
                     InputStream inputStream = file.getInputStream();
                     Map result = executeService.executeUploadMetaData(dir,packageName,inputStream,force,true);
+                    String config;
+                    if((config = (String) result.get("configuration"))!=null){
+                        JSONObject jsonConfig = JSONObject.parseObject(config);
+                        jsonConfig.put("name",serviceName);
+                        jsonConfig.put("version",version);
+                        String propertyId = processorConfig.save(jsonConfig.toString(),"1");
+                        if(propertyId!=null){
+                            map.put("propertyId",propertyId);
+                        }
+                    }
                     if((Boolean)result.get("success")){
                         map.put("filePath", dir);
                         map.put("success",true);
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
+                } catch (InterruptedException | IOException e) {
                     e.printStackTrace();
                 }
                 return new ObjectRestResponse<>().data(map);

@@ -19,6 +19,9 @@ public class TaskItemEntity {
 
     private List<String> workerList;
     private List<String> updateTime;
+
+    // Some don't have createTime
+    private List<String> createTime;
     private int iterations;
 
     private String status;
@@ -26,4 +29,11 @@ public class TaskItemEntity {
     //timeToAnnList
     private Map<String,List<Annotation>> annotations;
     private String lastUpdateTime;
+
+    //timeToQuality
+    private List<Quality> quality;
+
+    private List<Boolean> change;
+
+    private int maxWorkerPerTask;
 }

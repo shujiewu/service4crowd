@@ -22,4 +22,6 @@ public class InferenceTask {
     private Date endTime;
     private String status;
     private JSONObject inferenceResult;
+
+    private String processInstanceId;
 }

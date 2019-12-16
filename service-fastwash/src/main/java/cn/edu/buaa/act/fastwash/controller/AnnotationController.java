@@ -74,4 +74,20 @@ public class AnnotationController {
             return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(false);
         }
     }
+
+    //new API
+    @RequestMapping(value = "/task/submits", method = RequestMethod.POST, produces = "application/json")
+    public ObjectRestResponse submitTasks(@RequestBody CrowdAnnotationTask crowdAnnotationTask,@RequestParam String projectName){
+        annotationService.submitCrowdTaskComplete(projectName,crowdAnnotationTask);
+        return new ObjectRestResponse<>().success(true);
+    }
+    @RequestMapping(value = "/task/nexts", method = RequestMethod.GET, produces = "application/json")
+    public ObjectRestResponse getNextTasks(@RequestParam String projectName, @RequestParam String dataSetName,@RequestParam(defaultValue = "0", required = false) String classId){
+        CrowdAnnotationTask crowdAnnotationTask = annotationService.findLastAnnotationListNew(projectName,classId);
+        if(crowdAnnotationTask.getDetImg()!=null){
+            return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(true);
+        }else{
+            return new ObjectRestResponse<CrowdAnnotationTask>().data(crowdAnnotationTask).success(false);
+        }
+    }
 }

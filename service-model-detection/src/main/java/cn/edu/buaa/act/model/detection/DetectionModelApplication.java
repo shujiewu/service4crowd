@@ -10,7 +10,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication
 @EnableEurekaClient
 @EnableAuthClient
-@EnableFeignClients({"cn.edu.buaa.act.auth.client.feign"})
+@EnableFeignClients({"cn.edu.buaa.act.auth.client.feign","cn.edu.buaa.act.model.detection.feign"})
 public class DetectionModelApplication {
     public static void main(String[] args) {
         SpringApplication.run(DetectionModelApplication.class, args);

@@ -8,6 +8,7 @@ import cn.edu.buaa.act.model.detection.channel.MachineAnnotationChannel;
 import cn.edu.buaa.act.model.detection.channel.ModelTrainingChannel;
 import cn.edu.buaa.act.model.detection.common.Constants;
 import cn.edu.buaa.act.model.detection.entity.InferenceTask;
+import cn.edu.buaa.act.model.detection.entity.SelectRequest;
 import cn.edu.buaa.act.model.detection.repository.InferenceTaskRepository;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -80,6 +81,21 @@ public class InferenceService {
         inferenceTask.setStatus(Constants.INFERENCE_TASK_CREATED);
         return inferenceTaskRepository.insert(inferenceTask);
     }
+
+    public InferenceTask createProcessInferenceTask(String processInstanceId, SelectRequest selectRequest){
+        Set<String> imageIdSet = new HashSet<>(selectRequest.getImageIdList());
+        InferenceTask inferenceTask = new InferenceTask();
+        inferenceTask.setCreateTime(new Date());
+        inferenceTask.setDataSetName(selectRequest.getDataSetName());
+        inferenceTask.setUserId(BaseContextHandler.getUserID());
+        inferenceTask.setImageIdList(new ArrayList<>(imageIdSet));
+        inferenceTask.setProcessInstanceId(processInstanceId);
+        inferenceTask.setStatus(Constants.INFERENCE_TASK_CREATED);
+        return inferenceTaskRepository.insert(inferenceTask);
+    }
+
+
+
 
 //    private void insertMachineTask(String projectName, String dataSetName, Set<String> imageIdList){
 //        MongoCollection<Document> mongoCollection =  mongoTemplate.getCollection(projectName+"_task");

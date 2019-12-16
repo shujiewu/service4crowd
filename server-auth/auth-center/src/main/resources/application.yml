@@ -1,5 +1,5 @@
 RABBIT_MQ_HOST: 10.1.1.63
-RABBIT_MQ_PORT: 5673
+RABBIT_MQ_PORT: 5672
 EUREKA_HOST: 10.1.1.63
 MYSQL_HOST: 10.1.1.63
 REDIS_HOST: 10.1.1.63
@@ -33,30 +33,6 @@ spring:
         testOnReturn: false
         poolPreparedStatements: true
         maxOpenPreparedStatements: 20
-#        name: auth
-#        type: com.alibaba.druid.pool.DruidDataSource
-#        filters: stat
-#        driver-class-name: com.mysql.jdbc.Driver
-#        url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/service4crowd?useUnicode=true&characterEncoding=UTF8
-#        username: root
-#        password: 1706223
-#        initialSize: 1
-#        minIdle: 1
-#        maxActive: 20
-#        maxWait: 60000
-#        #间隔多久进行一次检测，检测需要关闭的空闲连接
-#        timeBetweenEvictionRunsMillis: 60000
-#        #一个连接在池中最小生存的时间
-#        minEvictableIdleTimeMillis: 300000
-#        validationQuery: select 'x'
-#        testWhileIdle: true
-#        testOnBorrow: false
-#        testOnReturn: false
-#        #打开PSCache，并指定每个连接上PSCache的大小。oracle设为true，mysql设为false。分库分表较多推荐设置为false
-#        poolPreparedStatements: true
-#        maxOpenPreparedStatements: 20
-#        # druid:
-
     #redis-cache 相关
     redis:
         pool:
@@ -88,7 +64,7 @@ spring:
     sleuth:
   #统计收集百分比默认0.1，正式环境可不配置
       sampler:
-        percentage: 1.0
+        percentage: 0.1
 
 mybatis:
     mapper-locations: classpath:mapper/*.xml
@@ -154,8 +130,6 @@ auth:
   serviceId: auth-center
   user:
     token-header: Authorization
-
-
 
 jwt:
   token-header: Authorization

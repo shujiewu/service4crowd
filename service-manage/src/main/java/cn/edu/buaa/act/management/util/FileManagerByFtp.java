@@ -12,7 +12,7 @@ import java.util.Map;
 
 @Component
 public class FileManagerByFtp {
-    @Value("${ftp.host:192.168.3.188}")
+    @Value("${ftp.host:192.168.3.117}")
     private String host;
     @Value("${ftp.port:21}")
     private int port;
@@ -124,16 +124,11 @@ public class FileManagerByFtp {
      * FTP下载单个文件测试 
      */  
     public String fileDownloadByFtp(String path, String filename) {
-        System.out.println(111);
         FTPClient ftpClient = new FTPClient();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             ftpClient.connect(host,port);
             ftpClient.login(userName,password);
-
-//            ftpClient.connect("192.168.3.188", 21);
-//            ftpClient.login("wsj", "shujie1127");
-            // fos = new FileOutputStream("E:/test/test_back_081901.sql");  
             baos = new ByteArrayOutputStream();
             ftpClient.setBufferSize(1024);
 
@@ -162,11 +157,5 @@ public class FileManagerByFtp {
                 throw new RuntimeException("关闭FTP连接发生异常！", e);  
             }  
         }  
-    }  
-  
-//    public static void main(String[] args) {
-//        FileManagerByFtp fileManagerByFtp = new FileManagerByFtp();
-//        fileManagerByFtp.fileDownloadByFtp("/home/wsj/service4crowd/service/ALGORITHM/ttweb1/v1/","config.json");
-//        //fileDownloadByFtp();
-//    }
+    }
 }  

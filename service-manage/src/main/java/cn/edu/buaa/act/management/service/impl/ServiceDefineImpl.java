@@ -104,7 +104,7 @@ public class ServiceDefineImpl implements ServiceDefine {
         deploymentProperties.put(Properties.PORTMAP_PROPERTY,jsonObject.getString(Properties.PORTMAP_PROPERTY));
         deploymentProperties.put(Properties.ENV_PROPERTY,jsonObject.getString(Properties.ENV_PROPERTY));
         deploymentProperties.put(Properties.URIS_PROPERTY,jsonObject.getString(Properties.URIS_PROPERTY));
-        System.out.println(deploymentProperties);
+        //System.out.println(deploymentProperties);
         //resourt
 
         Resource docker =new DockerResource(serviceRegistration.getUri());

@@ -25,6 +25,12 @@ public interface IDataCoreService {
     @RequestMapping(value = "/data/crowdTask/complete", method = RequestMethod.POST, produces = "application/json")
     public ResponseEntity<Map> completeCrowdTask(@RequestBody Map<String, String> request);
 
+    @RequestMapping(value = "/data/crowdTask/asyncRun", method = RequestMethod.POST, produces = "application/json")
+    public ResponseEntity<Map> asyncRunCrowdTask(@RequestBody Map<String, String> request);
+
+    @RequestMapping(value = "/data/machineTask/asyncRun", method = RequestMethod.POST, produces = "application/json")
+    public ResponseEntity<Map> asyncRunMachineTask(@RequestBody Map<String, String> request);
+
     @RequestMapping(value = "/data/serviceResult/{serviceResultId}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<Map> getServiceResult(@PathVariable(value = "serviceResultId") String serviceResultId);
 

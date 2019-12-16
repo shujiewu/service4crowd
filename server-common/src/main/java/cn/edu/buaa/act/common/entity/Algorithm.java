@@ -21,7 +21,7 @@ public class Algorithm {
     private String userId;
     private String permission;
     private Date createTime;
-
+    private Boolean async;
     private String name;
     private String version;
     private String description;

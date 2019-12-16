@@ -1,0 +1,189 @@
+version: "2.2"
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:1.1.0-hadoop2.7.1-java8
+    container_name: namenode
+    volumes:
+      - ./docker_volume/hadoop/namenode:/hadoop/dfs/name
+      - ./docker_volume/input_files:/input_files
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+    ports:
+      - 50070:50070
+      - 8020:8020
+  
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:1.1.0-hadoop2.7.1-java8
+    container_name: resourcemanager
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+    env_file:
+      - ./hadoop.env
+  
+  historyserver:
+    image: bde2020/hadoop-historyserver:1.1.0-hadoop2.7.1-java8
+    container_name: historyserver
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+    volumes:
+      - ./docker_volume/hadoop/historyserver:/hadoop/yarn/timeline
+    env_file:
+      - ./hadoop.env
+  
+  nodemanager1:
+    image: bde2020/hadoop-nodemanager:1.1.0-hadoop2.7.1-java8
+    container_name: nodemanager1
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+    env_file:
+      - ./hadoop.env
+  
+  datanode1:
+    image: bde2020/hadoop-datanode:1.1.0-hadoop2.7.1-java8
+    container_name: datanode1
+    depends_on:
+      - namenode
+    volumes:
+      - ./docker_volume/hadoop/datanode1:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+  
+  datanode2:
+    image: bde2020/hadoop-datanode:1.1.0-hadoop2.7.1-java8
+    container_name: datanode2
+    depends_on:
+      - namenode
+    volumes:
+      - ./docker_volume/hadoop/datanode2:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+  
+  datanode3:
+    image: bde2020/hadoop-datanode:1.1.0-hadoop2.7.1-java8
+    container_name: datanode3
+    depends_on:
+      - namenode
+    volumes:
+      - ./docker_volume/hadoop/datanode3:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+
+  master:
+    image: gettyimages/spark:2.3.0-hadoop-2.8
+    container_name: master
+    command: bin/spark-class org.apache.spark.deploy.master.Master -h master
+    hostname: master
+    environment:
+      MASTER: spark://master:7077
+      SPARK_CONF_DIR: /conf
+      SPARK_PUBLIC_DNS: localhost
+    links:
+      - namenode
+      - resourcemanager
+    expose:
+      - 4040
+      - 7001
+      - 7002
+      - 7003
+      - 7004
+      - 7005
+      - 7077
+      - 6066
+    ports:
+      - 4040:4040
+      - 6066:6066
+      - 7077:7077
+      - 8080:8080
+    volumes:
+      - ./docker_volume/conf/master:/conf
+      - ./docker_volume/data:/tmp/data
+      - ./docker_volume/jars:/root/jars
+
+  worker1:
+    image: gettyimages/spark:2.3.0-hadoop-2.8
+    container_name: worker1
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
+    hostname: worker1
+    environment:
+      SPARK_CONF_DIR: /conf
+      SPARK_WORKER_CORES: 1
+      SPARK_WORKER_MEMORY: 1g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 7081
+      SPARK_PUBLIC_DNS: localhost
+    links:
+      - master
+    expose:
+      - 7012
+      - 7013
+      - 7014
+      - 7015
+      - 8881
+      - 7081
+    ports:
+      - 7081:7081
+    volumes:
+      - ./docker_volume/conf/worker1:/conf
+      - ./docker_volume/data/worker1:/tmp/data
+
+  worker2:
+    image: gettyimages/spark:2.3.0-hadoop-2.8
+    container_name: worker2
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
+    hostname: worker2
+    environment:
+      SPARK_CONF_DIR: /conf
+      SPARK_WORKER_CORES: 1
+      SPARK_WORKER_MEMORY: 1g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 7082
+      SPARK_PUBLIC_DNS: localhost
+    links:
+      - master
+    expose:
+      - 7012
+      - 7013
+      - 7014
+      - 7015
+      - 8881
+      - 7082
+    ports:
+      - 7082:7082
+    volumes:
+      - ./docker_volume/conf/worker2:/conf
+      - ./docker_volume/data/worker2:/tmp/data     
+
+  worker3:
+    image: gettyimages/spark:2.3.0-hadoop-2.8
+    container_name: worker3
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
+    hostname: worker3
+    environment:
+      SPARK_CONF_DIR: /conf
+      SPARK_WORKER_CORES: 1
+      SPARK_WORKER_MEMORY: 1g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 7083
+      SPARK_PUBLIC_DNS: localhost
+    links:
+      - master
+    expose:
+      - 7012
+      - 7013
+      - 7014
+      - 7015
+      - 8881
+      - 7083
+    ports:
+      - 7083:7083
+    volumes:
+      - ./docker_volume/conf/worker3:/conf
+      - ./docker_volume/data/worker3:/tmp/data

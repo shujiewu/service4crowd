@@ -136,4 +136,22 @@ public class CrowdTaskController {
         }
         return new ResponseEntity<Object>(map, HttpStatus.OK);
     }
+
+    @IgnoreUserToken
+    @RequestMapping(value = "/crowdTask/asyncRun", method = RequestMethod.POST, produces = "application/json")
+    public ResponseEntity<Object> asyncRunCrowdTask(@RequestBody Map<String, String> request) {
+        Map map = new HashMap();
+        CrowdTaskEntity crowdTaskEntity = crowdJobService.queryByTaskId(request.get("taskId"));
+        if(crowdTaskEntity!=null){
+            crowdTaskEntity.setStatus(request.get("status"));
+            crowdTaskEntity=crowdJobService.insertEntity(crowdTaskEntity);
+        }
+        if(crowdTaskEntity.getId()!=null) {
+            map.put("success", true);
+        } else {
+            map.put("success", false);
+            map.put("message","Not Found");
+        }
+        return new ResponseEntity<Object>(map, HttpStatus.OK);
+    }
 }

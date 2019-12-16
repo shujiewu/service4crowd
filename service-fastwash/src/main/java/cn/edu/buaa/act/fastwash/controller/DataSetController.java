@@ -21,9 +21,9 @@ public class DataSetController {
 //        if(!dataSetService.dataSetExist("voc_2007_trainval")){
 //            dataSetService.insertDataSet(ReadJsonFile.ReadFile("D:\\data\\VOC2007\\annotations"));
 //        }
-        if(!dataSetService.dataSetExist("voc_2007_test")){
-            DataSetEntity dataSetEntity = ReadFile.readDataSet("D:\\data\\VOC2007\\annotations\\voc_2007_test.json");
-            dataSetEntity.setDataSetName("voc_2007_test");
+        if(!dataSetService.dataSetExist("voc_2007_train")){
+            DataSetEntity dataSetEntity = ReadFile.readDataSet("D:\\data\\VOC2007\\annotations\\voc_2007_train.json");
+            dataSetEntity.setDataSetName("voc_2007_train");
             dataSetService.insertDataSet(dataSetEntity);
         }
         List<DataSetEntity> dataSetEntities = dataSetService.findDataSets();

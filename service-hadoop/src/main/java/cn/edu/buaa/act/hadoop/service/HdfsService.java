@@ -1115,10 +1115,10 @@ public class HdfsService {
 	}
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
-		conf.set("fs.defaultFS", "hdfs://192.168.142.138:9000");
+		conf.set("fs.defaultFS", "hdfs://10.1.1.62:8020");
 		URI defaultUri = FileSystem.getDefaultUri(conf);
 		System.err.println(defaultUri);
-		HdfsService api = new HdfsService("hdfs://192.168.142.138:9000", "root");
+		HdfsService api = new HdfsService("hdfs://10.1.1.62:8020", "root");
 		api.mkdir("AA");
 	}
 }

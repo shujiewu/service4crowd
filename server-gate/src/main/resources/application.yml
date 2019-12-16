@@ -75,6 +75,10 @@ zuul:
       path: /workflow/**
       serviceId: service-workflow
       strip-prefix: false
+    processor:
+      path: /processor/**
+      serviceId: service-data-processor
+      strip-prefix: false
     data:
       path: /data/**
       serviceId: service-data-core
