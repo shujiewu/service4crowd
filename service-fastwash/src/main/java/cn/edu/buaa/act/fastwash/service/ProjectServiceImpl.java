@@ -157,8 +157,8 @@ public class ProjectServiceImpl implements IProjectService{
         MongoCollection<Document> dataCollection = mongoTemplate.getCollection(projectEntity.getName()+"_data");
         dataCollection.insertMany(dataItemEntities);
 
-//        MongoCollection<Document> groundTruthCollection = mongoTemplate.getCollection(projectEntity.getName()+"_result");
-//        groundTruthCollection.insertMany(groundTruthItems);
+        MongoCollection<Document> groundTruthCollection = mongoTemplate.getCollection(projectEntity.getName()+"_result");
+        groundTruthCollection.insertMany(groundTruthItems);
 
         projectEntity.setCreateTime(new Date());
         projectEntity.setStatus(PROJECT_STATUS_CREATE);
@@ -234,14 +234,13 @@ public class ProjectServiceImpl implements IProjectService{
         return null;
     }
 
-    // Todo: 避免重复提交
-    // Todo: 初始化标注任务
     @Override
     public boolean publishProject(String projectName, String dataSetName, PublishRequest publishRequest) {
+        ProjectEntity projectEntity = projectRepository.findProjectEntityByName(projectName);
         List<DataItemEntity> dataItemEntities = new LinkedList<>();
         MongoCollection<Document> dataCollection = mongoTemplate.getCollection(projectName+"_data");
         if(Constants.PUBLISH_RANDOM.equals(publishRequest.getStrategy())){
-            if(publishRequest.getTotal()!=0){
+            if(publishRequest.getTotal()>0){
                 BasicDBObject query = new BasicDBObject();
                 query.put("status", Constants.IMAGE_STATUS_UNANNOTATED);
                 try (MongoCursor<Document> cursor = dataCollection.find(query).iterator()) {
@@ -262,8 +261,11 @@ public class ProjectServiceImpl implements IProjectService{
                     for(int i = 0;i<sum-publishRequest.getTotal();i++)
                         dataItemEntities.remove(dataItemEntities.size()-1);
                 }
+            }else{
+                return false;
             }
         }
+        //TODO: 固定策略发放任务，指定图片ID
         if(Constants.PUBLISH_FIXED.equals(publishRequest.getStrategy())){
             if(publishRequest.getImageIdList()!=null){
             }
@@ -283,15 +285,17 @@ public class ProjectServiceImpl implements IProjectService{
 
         Map<String,List<Tag>> groundTruthMap = new HashMap<>();
 
-        try (MongoCursor<Document> cursor = groundTruthCollection.find(query).iterator()) {
-            while (cursor.hasNext()) {
-                Document origin = cursor.next();
-                String str = origin.toJson();
-                TrainingItem trainingItem = JSONObject.parseObject(str, TrainingItem.class);
-                groundTruthMap.put(trainingItem.getImageId(),trainingItem.getTagList());
+        if(projectEntity.getType().equals("Detection")){
+            try (MongoCursor<Document> cursor = groundTruthCollection.find(query).iterator()) {
+                while (cursor.hasNext()) {
+                    Document origin = cursor.next();
+                    String str = origin.toJson();
+                    TrainingItem trainingItem = JSONObject.parseObject(str, TrainingItem.class);
+                    groundTruthMap.put(trainingItem.getImageId(),trainingItem.getTagList());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
         List<TaskItemEntity> taskItemEntities = new ArrayList<>();
         List<Document> taskItemDocs = new ArrayList<>();
@@ -308,6 +312,8 @@ public class ProjectServiceImpl implements IProjectService{
                     taskItemEntity.setDataSetName(dataSetName);
                     taskItemEntity.setFileName(dataItemEntity.getFileName());
                     taskItemEntity.setIterations(0);
+                    taskItemEntity.setMaxWorkerPerTask(publishRequest.getMaxWorkerPerTask());
+                    taskItemEntity.setMaxIterationsPerTask(publishRequest.getMaxIterationsPerTask());
                     taskItemEntity.setImageId(dataItemEntity.getImageId());
                     taskItemEntities.add(taskItemEntity);
                     taskItemDocs.add(toDocument(taskItemEntity));
@@ -320,6 +326,8 @@ public class ProjectServiceImpl implements IProjectService{
                 taskItemEntity.setDataSetName(dataSetName);
                 taskItemEntity.setFileName(dataItemEntity.getFileName());
                 taskItemEntity.setIterations(0);
+                taskItemEntity.setMaxWorkerPerTask(publishRequest.getMaxWorkerPerTask());
+                taskItemEntity.setMaxIterationsPerTask(publishRequest.getMaxIterationsPerTask());
                 taskItemEntity.setImageId(dataItemEntity.getImageId());
                 taskItemEntities.add(taskItemEntity);
                 taskItemDocs.add(toDocument(taskItemEntity));
@@ -329,17 +337,18 @@ public class ProjectServiceImpl implements IProjectService{
         MongoCollection<Document> taskCollection = mongoTemplate.getCollection(projectName+"_task");
         taskCollection.insertMany(taskItemDocs);
 
+        //TODO:将推断结果插入TaskItemEntity中
         if(publishRequest.isInference()){
             ObjectRestResponse restResponse = modelDetectionFeign.inference(projectName,dataSetName,imageIdList);
             if(!restResponse.isSuccess()){
                 System.out.println("Model Inference Failed");
             }
         }
-
-        ProjectEntity projectEntity = projectRepository.findProjectEntityByName(projectName);
         projectEntity.setStatus(Constants.PROJECT_STATUS_PUBLISH);
         projectEntity.setRun(projectEntity.getRun()+dataItemEntities.size());
         projectRepository.save(projectEntity);
+
+        annotationService.addToRuntimeProject(projectEntity.getName());
         //修改状态
 //        Bson filter = Filters.eq("age", 1);
 //        FindIterable findIterable = collection.find(filter);
@@ -348,9 +357,6 @@ public class ProjectServiceImpl implements IProjectService{
 //            System.out.println(cursor.next());
 //        }
 //        dataCollection.replaceOne(origin,toDocument(dataItemEntity));
-
-
-
         return true;
     }
 

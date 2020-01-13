@@ -36,6 +36,13 @@ public class ProcessProjectController {
     @Autowired
     private IDataCoreService iDataCoreService;
     private static Logger logger = LoggerFactory.getLogger(ProcessProjectController.class);
+
+    /**
+     * @param request
+     * @description 针对Service4Crowd开放的API，包含创建项目和发布项目
+     * @return
+     * @throws Exception
+     */
     @RequestMapping(value = "/createAndPublish", method = RequestMethod.POST, produces = "application/json")
     public ResponseEntity<Map> createProject(@RequestBody Map<String,Object> request) throws Exception {
 
@@ -66,6 +73,12 @@ public class ProcessProjectController {
     @Autowired
     AnnotationService annotationService;
 
+    /**
+     * @param projectName
+     * @description TODO：针对Service4Crowd开放的API，将项目设置为完成状态
+     * @return
+     * @throws Exception
+     */
     @RequestMapping(value = "/complete/{projectName}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<Map> completeProject(@PathVariable String projectName) throws Exception {
         Map<String, Object> result = new HashMap<>();

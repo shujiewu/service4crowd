@@ -13,4 +13,6 @@ public class PublishRequest {
     private List<String> imageIdList;
     //是否模型推断
     private boolean inference;
+    private int maxWorkerPerTask;
+    private int maxIterationsPerTask;
 }

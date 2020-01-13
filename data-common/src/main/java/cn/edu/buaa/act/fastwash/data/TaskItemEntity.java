@@ -36,4 +36,5 @@ public class TaskItemEntity {
     private List<Boolean> change;
 
     private int maxWorkerPerTask;
+    private int maxIterationsPerTask;
 }

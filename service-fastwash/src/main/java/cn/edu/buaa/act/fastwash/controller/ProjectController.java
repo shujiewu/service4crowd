@@ -29,6 +29,12 @@ public class ProjectController {
     @Autowired
     IProjectService projectService;
 
+    /**
+     * @param projectEntity
+     * @description 创建FastWash项目
+     * @return
+     * @throws Exception
+     */
     @RequestMapping(value = "/create", method = RequestMethod.POST, produces = "application/json")
     public ObjectRestResponse createProject(@RequestBody ProjectEntity projectEntity) throws Exception {
         projectEntity = projectService.insertProject(projectEntity);
@@ -39,11 +45,25 @@ public class ProjectController {
         }
     }
 
+    /**
+     * @param projectName
+     * @description 判断项目名是否存在
+     * @return
+     * @throws Exception
+     */
     @RequestMapping(value = "/{projectName}/exist", method = RequestMethod.GET, produces = "application/json")
     public ObjectRestResponse projectExist(@PathVariable String projectName) throws Exception {
         return new ObjectRestResponse<Object>().success(!projectService.projectExist(projectName));
     }
 
+    /**
+     * @param page
+     * @param limit
+     * @param status
+     * @description 获取项目列表
+     * @return
+     * @throws Exception
+     */
     @RequestMapping(value = "/list", method = RequestMethod.GET, produces = "application/json")
     public TableResultResponse<ProjectEntity> projectList(@RequestParam("page") int page, @RequestParam("limit") int limit,
                                                           @RequestParam(defaultValue = "all",required = false) String status) throws Exception {
@@ -94,6 +114,14 @@ public class ProjectController {
         return new TableResultResponse<String>(dataItemEntityPage.size(),dataItemEntityPage);
     }
 
+    /**
+     * @param projectName
+     * @param dataSetName
+     * @param publishRequest
+     * @description 发布项目
+     * @return
+     * @throws Exception
+     */
     @RequestMapping(value = "/{projectName}/publish", method = RequestMethod.POST, produces = "application/json")
     public ObjectRestResponse publishProject(@PathVariable String projectName, @RequestParam String dataSetName, @RequestBody PublishRequest publishRequest) throws Exception {
         return new ObjectRestResponse<Object>().success(projectService.publishProject(projectName,dataSetName,publishRequest));

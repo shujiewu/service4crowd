@@ -50,10 +50,14 @@ public class AnnotationService implements IAnnotationService {
     @Autowired
     private MongoTemplate mongoTemplate;
 
+    /**
+     * @param dataSetName
+     * @param imageId
+     * @description 获取图片的数据
+     * @return
+     */
     private Image getImage(String dataSetName,String imageId){
         Image image = dataSetService.findImage(dataSetName,imageId);
-        System.out.println(dataSetName);
-        System.out.println(imageId);
         image.setBlob(getImageBinary("D:\\data\\VOC2007\\JPEGImages\\"+image.getFile_name(),"JPG"));
         return image;
     }
@@ -478,7 +482,6 @@ public class AnnotationService implements IAnnotationService {
 
 
     // new API
-
     public void addToRuntimeProject(String projectName){
         if(taskQueueMap.get(projectName)==null){
             taskQueueMap.put(projectName,new ConcurrentHashMap<>());
@@ -647,7 +650,16 @@ public class AnnotationService implements IAnnotationService {
                 }
                 taskItemEntity.getWorkerList().add(BaseContextHandler.getUserID());
 
-                taskItemEntity.setStatus(Constants.TASK_STATUS_COMPLETED);
+
+                if(taskItemEntity.getMaxIterationsPerTask()>0){
+                    if(taskItemEntity.getIterations()<taskItemEntity.getMaxIterationsPerTask()){
+                        taskQueueMap.get(projectName).get(taskItemEntity.getClassId()).offer(taskItemEntity);
+                    }else{
+                        taskItemEntity.setStatus(Constants.TASK_STATUS_COMPLETED);
+                    }
+                }else{
+                    taskItemEntity.setStatus(Constants.TASK_STATUS_COMPLETED);
+                }
 
                 if(taskItemEntity.getAnnotations()==null){
                     taskItemEntity.setAnnotations(new HashMap<>());
@@ -678,9 +690,9 @@ public class AnnotationService implements IAnnotationService {
                 taskItemEntity.setId(null);
                 mongoCollection.replaceOne(Filters.eq("_id",
                         new ObjectId(JSONObject.parseObject(crowdAnnotationTask.getId()).get("$oid").toString())),toDocument(taskItemEntity));
-
-                //加入最近的队列
                 taskItemEntity.setId(JSONObject.parseObject(crowdAnnotationTask.getId()).get("$oid").toString());
+
+                //加入最近完成的队列
                 recentCompleteTaskMap.get(projectName).offer(taskItemEntity);
             }
         } catch (Exception e) {
@@ -714,9 +726,11 @@ public class AnnotationService implements IAnnotationService {
                 while(taskItemEntityIterator.hasNext()){
                     temp = taskItemEntityIterator.next();
                     int count = 0;
-                    for(String workerId: temp.getWorkerList()){
-                        if(workerId.equals(BaseContextHandler.getUserID())){
-                            count++;
+                    if(temp.getWorkerList()!=null){
+                        for(String workerId: temp.getWorkerList()){
+                            if(workerId.equals(BaseContextHandler.getUserID())){
+                                count++;
+                            }
                         }
                     }
                     if(count>=temp.getMaxWorkerPerTask()){
@@ -745,9 +759,11 @@ public class AnnotationService implements IAnnotationService {
             while(taskItemEntityIterator.hasNext()){
                 temp = taskItemEntityIterator.next();
                 int count = 0;
-                for(String workerId: temp.getWorkerList()){
-                    if(workerId.equals(BaseContextHandler.getUserID())){
-                        count++;
+                if(temp.getWorkerList()!=null){
+                    for(String workerId: temp.getWorkerList()){
+                        if(workerId.equals(BaseContextHandler.getUserID())){
+                            count++;
+                        }
                     }
                 }
                 if(count>=temp.getMaxWorkerPerTask()){
